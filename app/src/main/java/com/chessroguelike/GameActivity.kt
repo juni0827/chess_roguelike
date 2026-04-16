@@ -22,6 +22,8 @@ class GameActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var enemyAI = EnemyAI(1)
 
+    private var capturedAtRoundStart = 0
+
     companion object {
         const val EXTRA_UPGRADES = "upgrades"
         const val REQUEST_UPGRADE = 1001
@@ -148,8 +150,9 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun handleRoundWon() {
-        val capturedCount = gameEngine.capturedByPlayer
-        roundManager.addScore(capturedCount)
+        val capturedThisRound = gameEngine.capturedByPlayer - capturedAtRoundStart
+        roundManager.addScore(capturedThisRound)
+        capturedAtRoundStart = gameEngine.capturedByPlayer
 
         val round = roundManager.currentRound
         if (round >= 5) {
@@ -157,7 +160,7 @@ class GameActivity : AppCompatActivity() {
             return
         }
 
-        val upgrades = roundManager.generateUpgradeOptions(gameEngine.board.getPlayerPieces())
+        val upgrades = roundManager.generateUpgradeOptions()
         val intent = Intent(this, UpgradeActivity::class.java).apply {
             putParcelableArrayListExtra(EXTRA_UPGRADES, ArrayList(upgrades))
         }
@@ -168,29 +171,44 @@ class GameActivity : AppCompatActivity() {
     @Suppress("DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_UPGRADE && resultCode == RESULT_OK) {
-            val upgrade = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                data?.getParcelableExtra(UpgradeActivity.EXTRA_SELECTED_UPGRADE, Upgrade::class.java)
+        if (requestCode == REQUEST_UPGRADE) {
+            if (resultCode == RESULT_OK) {
+                val upgrade = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    data?.getParcelableExtra(UpgradeActivity.EXTRA_SELECTED_UPGRADE, Upgrade::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    data?.getParcelableExtra<Upgrade>(UpgradeActivity.EXTRA_SELECTED_UPGRADE)
+                }
+                val targetPieceId = data?.getIntExtra(UpgradeActivity.EXTRA_TARGET_PIECE_ID, -1) ?: -1
+
+                if (upgrade != null) {
+                    val targetPiece = when {
+                        targetPieceId >= 0 ->
+                            gameEngine.board.getPlayerPieces().find { it.id == targetPieceId }
+                        targetPieceId == UpgradeActivity.PIECE_ID_AUTO_SELECT ->
+                            gameEngine.board.getPlayerPieces()
+                                .firstOrNull { it.type != com.chessroguelike.engine.PieceType.KING }
+                        else -> null
+                    }
+                    roundManager.applyUpgrade(gameEngine.board, upgrade, targetPiece)
+                }
+
+                roundManager.nextRound()
+                roundManager.generateEnemySetup(gameEngine.board)
+                gameEngine.startNextRound()
+                enemyAI = EnemyAI(roundManager.currentRound)
+                binding.boardView.setLastMove(null)
+                updateBoardView()
+                updateStatusUI()
             } else {
+                // User dismissed upgrade selection — re-launch to prevent soft-lock
+                val upgrades = roundManager.generateUpgradeOptions()
+                val intent = Intent(this, UpgradeActivity::class.java).apply {
+                    putParcelableArrayListExtra(EXTRA_UPGRADES, ArrayList(upgrades))
+                }
                 @Suppress("DEPRECATION")
-                data?.getParcelableExtra<Upgrade>(UpgradeActivity.EXTRA_SELECTED_UPGRADE)
+                startActivityForResult(intent, REQUEST_UPGRADE)
             }
-            val targetPieceId = data?.getIntExtra(UpgradeActivity.EXTRA_TARGET_PIECE_ID, -1) ?: -1
-
-            if (upgrade != null) {
-                val targetPiece = if (targetPieceId >= 0)
-                    gameEngine.board.getPlayerPieces().find { it.id == targetPieceId }
-                else null
-                roundManager.applyUpgrade(gameEngine.board, upgrade, targetPiece)
-            }
-
-            roundManager.nextRound()
-            roundManager.generateEnemySetup(gameEngine.board)
-            gameEngine.startNextRound()
-            enemyAI = EnemyAI(roundManager.currentRound)
-            binding.boardView.setLastMove(null)
-            updateBoardView()
-            updateStatusUI()
         }
     }
 

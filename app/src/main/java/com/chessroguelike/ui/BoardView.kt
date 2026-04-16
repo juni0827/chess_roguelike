@@ -48,6 +48,10 @@ class BoardView @JvmOverloads constructor(
         style = Paint.Style.FILL
     }
 
+    private val coordPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        isFakeBoldText = true
+    }
+
     private var squareSize = 0f
     private var lastMove: Move? = null
     private var boardOffsetX = 0f
@@ -160,10 +164,7 @@ class BoardView @JvmOverloads constructor(
     }
 
     private fun drawCoordinates(canvas: Canvas) {
-        val coordPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = squareSize * 0.22f
-            isFakeBoldText = true
-        }
+        coordPaint.textSize = squareSize * 0.22f
         for (i in 0 until ChessBoard.SIZE) {
             val isLight = i % 2 == 0
             coordPaint.color = if (isLight) Color.parseColor("#B58863") else Color.parseColor("#F0D9B5")

@@ -53,7 +53,7 @@ class RoundManager {
         return (0 until ChessBoard.SIZE).firstOrNull { col -> board.getPiece(row, col) == null } ?: -1
     }
 
-    fun generateUpgradeOptions(existingPlayerPieces: List<com.chessroguelike.engine.ChessPiece>): List<Upgrade> {
+    fun generateUpgradeOptions(): List<Upgrade> {
         val options = mutableListOf<Upgrade>()
         var idCounter = 1
 

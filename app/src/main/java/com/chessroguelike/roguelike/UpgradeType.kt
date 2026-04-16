@@ -9,7 +9,6 @@ sealed class UpgradeType : Parcelable {
     data class AddPiece(val pieceType: PieceType) : UpgradeType() {
         constructor(parcel: Parcel) : this(PieceType.valueOf(parcel.readString()!!))
         override fun writeToParcel(parcel: Parcel, flags: Int) {
-            parcel.writeInt(TYPE_ADD_PIECE)
             parcel.writeString(pieceType.name)
         }
         override fun describeContents() = 0
@@ -22,7 +21,6 @@ sealed class UpgradeType : Parcelable {
     data class AddAbility(val ability: Ability) : UpgradeType() {
         constructor(parcel: Parcel) : this(Ability.valueOf(parcel.readString()!!))
         override fun writeToParcel(parcel: Parcel, flags: Int) {
-            parcel.writeInt(TYPE_ADD_ABILITY)
             parcel.writeString(ability.name)
         }
         override fun describeContents() = 0
@@ -34,7 +32,7 @@ sealed class UpgradeType : Parcelable {
 
     object Heal : UpgradeType() {
         override fun writeToParcel(parcel: Parcel, flags: Int) {
-            parcel.writeInt(TYPE_HEAL)
+            // No fields to write
         }
         override fun describeContents() = 0
         @JvmField
