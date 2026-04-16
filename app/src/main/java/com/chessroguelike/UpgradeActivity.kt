@@ -37,7 +37,11 @@ class UpgradeActivity : AppCompatActivity() {
         } else {
             @Suppress("DEPRECATION")
             intent.getParcelableArrayListExtra<Upgrade>(GameActivity.EXTRA_UPGRADES)
-        } ?: return
+        } ?: run {
+            setResult(Activity.RESULT_CANCELED)
+            finish()
+            return
+        }
 
         binding.tvUpgradeTitle.text = "업그레이드를 선택하세요"
         binding.tvUpgradeSubtitle.text = "라운드 클리어! 3가지 중 하나를 선택하세요"
