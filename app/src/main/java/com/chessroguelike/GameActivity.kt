@@ -169,7 +169,12 @@ class GameActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_UPGRADE && resultCode == RESULT_OK) {
-            val upgrade = data?.getParcelableExtra<Upgrade>(UpgradeActivity.EXTRA_SELECTED_UPGRADE)
+            val upgrade = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                data?.getParcelableExtra(UpgradeActivity.EXTRA_SELECTED_UPGRADE, Upgrade::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                data?.getParcelableExtra<Upgrade>(UpgradeActivity.EXTRA_SELECTED_UPGRADE)
+            }
             val targetPieceId = data?.getIntExtra(UpgradeActivity.EXTRA_TARGET_PIECE_ID, -1) ?: -1
 
             if (upgrade != null) {

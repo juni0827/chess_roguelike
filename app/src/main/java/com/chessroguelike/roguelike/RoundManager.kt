@@ -63,14 +63,14 @@ class RoundManager {
             PieceType.KNIGHT to Pair("나이트 추가", "♘"),
             PieceType.QUEEN to Pair("퀸 추가", "♕")
         )
-        val pieceUpgrade = addablePieces.random()
+        val (pieceType, pieceInfo) = addablePieces.random()
         options.add(
             Upgrade(
                 id = idCounter++,
-                name = "새 기물 추가: ${pieceUpgrade.first.displayName}",
-                description = "플레이어 진영에 ${pieceUpgrade.first.displayName}을(를) 추가합니다",
-                upgradeType = UpgradeType.AddPiece(pieceUpgrade.first),
-                icon = pieceUpgrade.second.second
+                name = "새 기물 추가: ${pieceType.displayName}",
+                description = "플레이어 진영에 ${pieceType.displayName}을(를) 추가합니다",
+                upgradeType = UpgradeType.AddPiece(pieceType),
+                icon = pieceInfo.second
             )
         )
 

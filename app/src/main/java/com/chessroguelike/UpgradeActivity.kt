@@ -34,8 +34,12 @@ class UpgradeActivity : AppCompatActivity() {
         binding = ActivityUpgradeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        @Suppress("DEPRECATION")
-        val upgrades = intent.getParcelableArrayListExtra<Upgrade>(GameActivity.EXTRA_UPGRADES) ?: return
+        val upgrades = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableArrayListExtra(GameActivity.EXTRA_UPGRADES, Upgrade::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableArrayListExtra<Upgrade>(GameActivity.EXTRA_UPGRADES)
+        } ?: return
 
         binding.tvUpgradeTitle.text = "업그레이드를 선택하세요"
         binding.tvUpgradeSubtitle.text = "라운드 클리어! 3가지 중 하나를 선택하세요"
