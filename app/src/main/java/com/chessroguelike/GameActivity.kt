@@ -195,10 +195,6 @@ class GameActivity : AppCompatActivity() {
             .setTitle("게임 오버")
             .setMessage("킹이 잡혔습니다!\n\n라운드: ${roundManager.currentRound}\n점수: ${roundManager.score}")
             .setPositiveButton("다시 시작") { _, _ ->
-                gameEngine.initGame()
-                roundManager.apply {
-                    // Reset round manager
-                }
                 recreate()
             }
             .setNegativeButton("메인 메뉴") { _, _ ->

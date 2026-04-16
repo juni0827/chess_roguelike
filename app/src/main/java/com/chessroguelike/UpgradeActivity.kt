@@ -26,6 +26,7 @@ class UpgradeActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_SELECTED_UPGRADE = "selected_upgrade"
         const val EXTRA_TARGET_PIECE_ID = "target_piece_id"
+        const val PIECE_ID_AUTO_SELECT = -2
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,7 +63,7 @@ class UpgradeActivity : AppCompatActivity() {
         Toast.makeText(this, "${ability.displayName} 능력을 부여할 기물을 선택하세요", Toast.LENGTH_LONG).show()
         // For simplicity, auto-select first non-king player piece
         // In a real app, you'd show a board overlay for piece selection
-        confirmAndFinish(upgrade, -2)
+        confirmAndFinish(upgrade, PIECE_ID_AUTO_SELECT)
     }
 
     private fun confirmAndFinish(upgrade: Upgrade, pieceId: Int) {
