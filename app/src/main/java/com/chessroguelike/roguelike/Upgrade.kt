@@ -2,8 +2,6 @@ package com.chessroguelike.roguelike
 
 import android.os.Parcel
 import android.os.Parcelable
-import com.chessroguelike.engine.Ability
-import com.chessroguelike.engine.PieceType
 
 data class Upgrade(
     val id: Int,
