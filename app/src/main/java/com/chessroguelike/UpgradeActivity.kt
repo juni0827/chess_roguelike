@@ -20,8 +20,6 @@ import com.chessroguelike.roguelike.UpgradeType
 class UpgradeActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityUpgradeBinding
-    private var selectedUpgrade: Upgrade? = null
-    private var targetPieceId: Int = -1
 
     companion object {
         const val EXTRA_SELECTED_UPGRADE = "selected_upgrade"
