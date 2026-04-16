@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/tvUpgradeTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="업그레이드 선택"
+        android:textSize="24sp"
+        android:textColor="@color/text_primary"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/tvUpgradeSubtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="3가지 중 하나를 선택하세요"
+        android:textSize="14sp"
+        android:textColor="@color/text_secondary"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvUpgrades"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp" />
+</LinearLayout>
