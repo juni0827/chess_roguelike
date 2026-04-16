@@ -63,26 +63,36 @@ class EnemyAI(private val round: Int) {
 
         return if (isMaximizing) {
             var maxScore = Int.MIN_VALUE
-            board.getEnemyPieces().forEach { piece ->
-                MoveGenerator.getValidMoves(piece, board).forEach { move ->
+            var shouldPrune = false
+            for (piece in board.getEnemyPieces()) {
+                for (move in MoveGenerator.getValidMoves(piece, board)) {
                     val sim = simulateMove(board, move)
                     val score = minimax(sim, depth - 1, false, alphaVar, betaVar)
                     maxScore = maxOf(maxScore, score)
                     alphaVar = maxOf(alphaVar, score)
-                    if (betaVar <= alphaVar) return@forEach
+                    if (betaVar <= alphaVar) {
+                        shouldPrune = true
+                        break
+                    }
                 }
+                if (shouldPrune) break
             }
             maxScore
         } else {
             var minScore = Int.MAX_VALUE
-            board.getPlayerPieces().forEach { piece ->
-                MoveGenerator.getValidMoves(piece, board).forEach { move ->
+            var shouldPrune = false
+            for (piece in board.getPlayerPieces()) {
+                for (move in MoveGenerator.getValidMoves(piece, board)) {
                     val sim = simulateMove(board, move)
                     val score = minimax(sim, depth - 1, true, alphaVar, betaVar)
                     minScore = minOf(minScore, score)
                     betaVar = minOf(betaVar, score)
-                    if (betaVar <= alphaVar) return@forEach
+                    if (betaVar <= alphaVar) {
+                        shouldPrune = true
+                        break
+                    }
                 }
+                if (shouldPrune) break
             }
             minScore
         }
