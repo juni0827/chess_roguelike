@@ -11,6 +11,7 @@ import com.chessroguelike.content.UpgradeDefinition
 import com.chessroguelike.content.VersionRange
 import com.chessroguelike.engine.PieceType
 import java.security.MessageDigest
+import java.nio.charset.StandardCharsets
 
 class ResolvedContentRegistry(
     override val pieces: Map<PieceType, PieceDefinition>,
@@ -93,7 +94,7 @@ class ResolvedContentRegistry(
 
         private fun hashPayloads(packs: List<ContentPackBundle>): String {
             val digest = MessageDigest.getInstance("SHA-256")
-            packs.forEach { digest.update(it.rawPayload.toByteArray()) }
+            packs.forEach { digest.update(it.rawPayload.toByteArray(StandardCharsets.UTF_8)) }
             return digest.digest().joinToString("") { "%02x".format(it) }
         }
 

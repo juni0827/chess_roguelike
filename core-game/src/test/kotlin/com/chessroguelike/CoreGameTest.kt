@@ -1,10 +1,12 @@
 package com.chessroguelike
 
 import com.chessroguelike.ai.EnemyAIService
+import com.chessroguelike.ai.AiService
 import com.chessroguelike.engine.ChessBoard
 import com.chessroguelike.engine.MoveGenerator
 import com.chessroguelike.engine.PieceType
 import com.chessroguelike.game.GameAction
+import com.chessroguelike.game.GameEvent
 import com.chessroguelike.game.GameSession
 import com.chessroguelike.game.GameRuntime
 import org.junit.Assert.assertEquals
@@ -77,5 +79,44 @@ class CoreGameTest {
         restored.dispatch(GameAction.ResumeRun(snapshot))
 
         assertEquals(runtime.currentState(), restored.currentState())
+    }
+
+    @Test
+    fun `round score only counts captures from the current round`() {
+        val noOpAi = object : AiService {
+            override fun getBestMove(
+                board: ChessBoard,
+                contentRegistry: com.chessroguelike.content.ContentRegistry,
+                round: Int,
+                rng: com.chessroguelike.game.DeterministicRng
+            ) = null
+        }
+        val session = GameSession.new(TestContentRegistry, noOpAi, seed = 11)
+        session.board.getAllPieces().forEach { piece ->
+            session.board.getPieceById(piece.id)?.let(session.board::removePiece)
+        }
+
+        session.board.createAndAddPiece(PieceType.KING, true, 7, 4)
+        val playerRook = session.board.createAndAddPiece(PieceType.ROOK, true, 1, 0)
+        session.board.createAndAddPiece(PieceType.PAWN, false, 0, 0)
+
+        session.selectSquare(playerRook.row, playerRook.col)
+        val firstRoundEvents = session.selectSquare(0, 0)
+
+        assertTrue(firstRoundEvents.any { it is GameEvent.RoundCleared && it.round == 1 })
+        assertEquals(110, session.state().score)
+
+        val offeredUpgradeId = session.state().offeredUpgradeIds.first()
+        session.applyUpgrade(offeredUpgradeId, playerRook.id)
+
+        session.board.getEnemyPieces().forEach { piece ->
+            session.board.getPieceById(piece.id)?.let(session.board::removePiece)
+        }
+
+        session.selectSquare(playerRook.row, playerRook.col)
+        val secondRoundEvents = session.selectSquare(playerRook.row + 1, playerRook.col)
+
+        assertTrue(secondRoundEvents.any { it is GameEvent.RoundCleared && it.round == 2 })
+        assertEquals(310, session.state().score)
     }
 }

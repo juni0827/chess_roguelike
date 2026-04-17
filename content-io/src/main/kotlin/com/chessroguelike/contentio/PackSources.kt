@@ -23,27 +23,25 @@ class ClasspathPackSource(
     private val root: String,
     private val sourcePriority: Int
 ) : ContentPackSource {
+    fun loadPacks(): List<ContentPackBundle> = loadPacks(JsonSupport.json)
+
     override fun loadPacks(json: Json): List<ContentPackBundle> {
-        val manifest = readResource("$root/manifest.json")
-        val content = readResource("$root/content/game-content.json")
-        val localeFiles = listResourceLocales(root)
-        val locales = localeFiles.associateWith { locale ->
-            val payload = readResource("$root/locales/$locale.json")
+        val manifestPayload = readResource("$root/manifest.json")
+        val manifest = json.decodeFromString<ContentPackManifest>(manifestPayload)
+        val contentPayload = readResource("$root/content/game-content.json")
+        val content = json.decodeFromString<GameContentFile>(contentPayload)
+        val localePayloads = listResourceLocales(root, manifest).associateWith { locale ->
+            readResource("$root/locales/$locale.json")
+        }
+        val locales = localePayloads.mapValues { (locale, payload) ->
             LocaleCatalog(locale, json.decodeFromString(payload))
         }
         return listOf(
             ContentPackBundle(
-                manifest = json.decodeFromString(manifest),
-                content = json.decodeFromString(content),
+                manifest = manifest,
+                content = content,
                 locales = locales,
-                rawPayload = buildString {
-                    append(manifest)
-                    append(content)
-                    locales.toSortedMap().forEach { (locale, catalog) ->
-                        append(locale)
-                        append(catalog.entries)
-                    }
-                },
+                rawPayload = stableRawPayload(manifestPayload, contentPayload, localePayloads),
                 sourcePriority = sourcePriority
             )
         )
@@ -55,8 +53,8 @@ class ClasspathPackSource(
         return stream.use { it.readBytes().toString(StandardCharsets.UTF_8) }
     }
 
-    private fun listResourceLocales(root: String): List<String> {
-        return listOf("ko-KR", "en")
+    private fun listResourceLocales(root: String, manifest: ContentPackManifest): List<String> {
+        return manifest.supportedLocales
             .filter { javaClass.classLoader.getResource("$root/locales/$it.json") != null }
     }
 }
@@ -65,6 +63,8 @@ class FileSystemPackSource(
     private val rootDir: File,
     private val sourcePriority: Int
 ) : ContentPackSource {
+    fun loadPacks(): List<ContentPackBundle> = loadPacks(JsonSupport.json)
+
     override fun loadPacks(json: Json): List<ContentPackBundle> {
         if (!rootDir.exists()) return emptyList()
         return rootDir.listFiles()
@@ -76,32 +76,44 @@ class FileSystemPackSource(
 
     private fun loadPack(dir: File, json: Json): ContentPackBundle {
         val manifestPayload = File(dir, "manifest.json").readPayload()
+        val manifest = json.decodeFromString<ContentPackManifest>(manifestPayload)
         val contentPayload = File(File(dir, "content"), "game-content.json").readPayload()
+        val content = json.decodeFromString<GameContentFile>(contentPayload)
         val localesDir = File(dir, "locales")
-        val locales = if (localesDir.exists()) {
-            localesDir.listFiles { file -> file.extension == "json" }?.associate { localeFile ->
+        val localePayloads = if (localesDir.exists()) {
+            localesDir.listFiles { file -> file.extension == "json" }
+                ?.sortedBy { it.name }
+                ?.associate { localeFile ->
                 val locale = localeFile.name.removeSuffix(".json")
-                val payload = localeFile.readPayload()
-                locale to LocaleCatalog(locale, json.decodeFromString(payload))
+                locale to localeFile.readPayload()
             } ?: emptyMap()
         } else {
             emptyMap()
         }
+        val locales = localePayloads.mapValues { (locale, payload) ->
+            LocaleCatalog(locale, json.decodeFromString(payload))
+        }
         return ContentPackBundle(
-            manifest = json.decodeFromString(manifestPayload),
-            content = json.decodeFromString(contentPayload),
+            manifest = manifest,
+            content = content,
             locales = locales,
-            rawPayload = buildString {
-                append(manifestPayload)
-                append(contentPayload)
-                locales.toSortedMap().forEach { (locale, catalog) ->
-                    append(locale)
-                    append(catalog.entries)
-                }
-            },
+            rawPayload = stableRawPayload(manifestPayload, contentPayload, localePayloads),
             sourcePriority = sourcePriority
         )
     }
 
     private fun File.readPayload(): String = inputStream().use(InputStream::readBytes).toString(StandardCharsets.UTF_8)
+}
+
+private fun stableRawPayload(
+    manifestPayload: String,
+    contentPayload: String,
+    localePayloads: Map<String, String>
+): String = buildString {
+    append(manifestPayload)
+    append(contentPayload)
+    localePayloads.toSortedMap().forEach { (locale, payload) ->
+        append(locale)
+        append(payload)
+    }
 }

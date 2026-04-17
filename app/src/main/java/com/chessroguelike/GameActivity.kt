@@ -20,9 +20,19 @@ class GameActivity : AppCompatActivity() {
     private val container by lazy { (application as ChessRoguelikeApp).appContainer }
     private var pendingAbilityUpgradeId: String? = null
 
+    companion object {
+        private const val STATE_PENDING_ABILITY_UPGRADE_ID = "pending_ability_upgrade_id"
+    }
+
     private val upgradeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode != RESULT_OK) return@registerForActivityResult
-        val upgradeId = result.data?.getStringExtra(UpgradeActivity.EXTRA_SELECTED_UPGRADE_ID) ?: return@registerForActivityResult
+        if (result.resultCode != RESULT_OK) {
+            relaunchPendingUpgradePicker()
+            return@registerForActivityResult
+        }
+        val upgradeId = result.data?.getStringExtra(UpgradeActivity.EXTRA_SELECTED_UPGRADE_ID) ?: run {
+            relaunchPendingUpgradePicker()
+            return@registerForActivityResult
+        }
         if (container.isAbilityUpgrade(upgradeId)) {
             pendingAbilityUpgradeId = upgradeId
             val abilityName = container.abilityNameForUpgrade(upgradeId)
@@ -41,6 +51,7 @@ class GameActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityGameBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        pendingAbilityUpgradeId = savedInstanceState?.getString(STATE_PENDING_ABILITY_UPGRADE_ID)
 
         setupBoardView()
         setupButtons()
@@ -50,6 +61,12 @@ class GameActivity : AppCompatActivity() {
             return
         }
         renderCurrentState()
+        relaunchPendingUpgradePicker()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(STATE_PENDING_ABILITY_UPGRADE_ID, pendingAbilityUpgradeId)
     }
 
     private fun setupBoardView() {
@@ -113,6 +130,14 @@ class GameActivity : AppCompatActivity() {
             putStringArrayListExtra(UpgradeActivity.EXTRA_UPGRADE_IDS, ArrayList(upgradeIds))
         }
         upgradeLauncher.launch(intent)
+    }
+
+    private fun relaunchPendingUpgradePicker() {
+        if (pendingAbilityUpgradeId != null) return
+        val upgradeIds = containerState()?.offeredUpgradeIds.orEmpty()
+        if (upgradeIds.isNotEmpty()) {
+            launchUpgradePicker(upgradeIds)
+        }
     }
 
     private fun renderCurrentState() {

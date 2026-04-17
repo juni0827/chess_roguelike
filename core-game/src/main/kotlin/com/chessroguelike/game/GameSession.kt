@@ -23,6 +23,7 @@ class GameSession private constructor(
     private var selectedPieceId: Int?,
     private var validMoves: List<Move>,
     private var capturedByPlayer: Int,
+    private var capturedByPlayerThisRound: Int,
     private var capturedByEnemy: Int,
     private var offeredUpgradeIds: List<String>
 ) {
@@ -41,6 +42,7 @@ class GameSession private constructor(
                 selectedPieceId = null,
                 validMoves = emptyList(),
                 capturedByPlayer = 0,
+                capturedByPlayerThisRound = 0,
                 capturedByEnemy = 0,
                 offeredUpgradeIds = emptyList()
             )
@@ -58,6 +60,7 @@ class GameSession private constructor(
                 selectedPieceId = snapshot.selectedPieceId,
                 validMoves = snapshot.validMoves,
                 capturedByPlayer = snapshot.capturedByPlayer,
+                capturedByPlayerThisRound = snapshot.capturedByPlayerThisRound,
                 capturedByEnemy = snapshot.capturedByEnemy,
                 offeredUpgradeIds = snapshot.offeredUpgradeIds
             )
@@ -86,6 +89,7 @@ class GameSession private constructor(
         selectedPieceId = selectedPieceId,
         validMoves = validMoves,
         capturedByPlayer = capturedByPlayer,
+        capturedByPlayerThisRound = capturedByPlayerThisRound,
         capturedByEnemy = capturedByEnemy,
         offeredUpgradeIds = offeredUpgradeIds,
         rngState = rng.state
@@ -185,7 +189,7 @@ class GameSession private constructor(
                 GameEvent.SaveRequired
             )
             MoveResult.ROUND_WON -> {
-                score += contentRegistry.balance.scoreRoundBase * currentRound + contentRegistry.balance.scoreCaptureMultiplier * capturedByPlayer
+                awardRoundScore()
                 if (currentRound >= contentRegistry.balance.maxRounds) {
                     return listOf(
                         GameEvent.MoveExecuted(move, isPlayer = true),
@@ -224,7 +228,7 @@ class GameSession private constructor(
         val move = aiService.getBestMove(board, contentRegistry, currentRound, rng)
         if (move == null) {
             turnState = TurnState.ROUND_WON
-            score += contentRegistry.balance.scoreRoundBase * currentRound + contentRegistry.balance.scoreCaptureMultiplier * capturedByPlayer
+            awardRoundScore()
             if (currentRound >= contentRegistry.balance.maxRounds) {
                 return listOf(
                     GameEvent.RunEnded(
@@ -263,6 +267,7 @@ class GameSession private constructor(
         if (captured != null) {
             if (playerMove) {
                 capturedByPlayer++
+                capturedByPlayerThisRound++
             } else {
                 capturedByEnemy++
             }
@@ -304,6 +309,7 @@ class GameSession private constructor(
     }
 
     private fun startNextRound() {
+        capturedByPlayerThisRound = 0
         currentRound++
         if (currentRound > contentRegistry.balance.maxRounds) {
             turnState = TurnState.ROUND_WON
@@ -367,5 +373,11 @@ class GameSession private constructor(
             }
         }
         return null
+    }
+
+    private fun awardRoundScore() {
+        score += contentRegistry.balance.scoreRoundBase * currentRound +
+            contentRegistry.balance.scoreCaptureMultiplier * capturedByPlayerThisRound
+        capturedByPlayerThisRound = 0
     }
 }

@@ -55,6 +55,7 @@ data class ActiveRunSnapshot(
     val selectedPieceId: Int?,
     val validMoves: List<Move>,
     val capturedByPlayer: Int,
+    val capturedByPlayerThisRound: Int = 0,
     val capturedByEnemy: Int,
     val offeredUpgradeIds: List<String>,
     val rngState: Long

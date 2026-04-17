@@ -13,8 +13,15 @@ import com.chessroguelike.contentio.ResolvedContentRegistry
 import com.chessroguelike.engine.PieceType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 class ContentIoTest {
 
@@ -39,7 +46,7 @@ class ContentIoTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun `resolver rejects incompatible mod version`() {
-        val tempRoot = createTempDir(prefix = "mod-version-test")
+        val tempRoot = Files.createTempDirectory("mod-version-test").toFile()
         val packDir = File(tempRoot, "bad-mod").apply { mkdirs() }
         File(packDir, "content").mkdirs()
         File(packDir, "locales").mkdirs()
@@ -100,5 +107,77 @@ class ContentIoTest {
         )
 
         assertEquals("Storm Queen", resolved.localizer("en").resolve(resolved.pieceNameKey(PieceType.QUEEN).value))
+    }
+
+    @Test
+    fun `zip importer blocks zip slip entries`() {
+        val tempRoot = Files.createTempDirectory("zip-slip-test").toFile()
+        val modsDir = File(tempRoot, "mods")
+
+        try {
+            val payload = zipOf("../evil.txt" to "oops")
+
+            try {
+                com.chessroguelike.contentio.ZipModImporter.importZip(ByteArrayInputStream(payload), modsDir)
+                fail("Expected zip slip import to fail")
+            } catch (_: IllegalArgumentException) {
+                assertTrue(File(tempRoot, "evil.txt").exists().not())
+            }
+        } finally {
+            tempRoot.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `zip importer rejects zips without a top level directory`() {
+        val tempRoot = Files.createTempDirectory("zip-layout-test").toFile()
+        val modsDir = File(tempRoot, "mods")
+
+        try {
+            val payload = zipOf("manifest.json" to "{}")
+
+            try {
+                com.chessroguelike.contentio.ZipModImporter.importZip(ByteArrayInputStream(payload), modsDir)
+                fail("Expected root-file zip to fail")
+            } catch (_: IllegalArgumentException) {
+                assertTrue(modsDir.listFiles().isNullOrEmpty())
+            }
+        } finally {
+            tempRoot.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `zip importer rejects multiple top level directories`() {
+        val tempRoot = Files.createTempDirectory("zip-multi-root-test").toFile()
+        val modsDir = File(tempRoot, "mods")
+
+        try {
+            val payload = zipOf(
+                "mod-a/manifest.json" to "{}",
+                "mod-b/content/game-content.json" to "{}"
+            )
+
+            try {
+                com.chessroguelike.contentio.ZipModImporter.importZip(ByteArrayInputStream(payload), modsDir)
+                fail("Expected multi-root zip to fail")
+            } catch (_: IllegalArgumentException) {
+                assertTrue(modsDir.listFiles().isNullOrEmpty())
+            }
+        } finally {
+            tempRoot.deleteRecursively()
+        }
+    }
+
+    private fun zipOf(vararg entries: Pair<String, String>): ByteArray {
+        val buffer = ByteArrayOutputStream()
+        ZipOutputStream(buffer).use { zip ->
+            entries.forEach { (name, contents) ->
+                zip.putNextEntry(ZipEntry(name))
+                zip.write(contents.toByteArray(StandardCharsets.UTF_8))
+                zip.closeEntry()
+            }
+        }
+        return buffer.toByteArray()
     }
 }
