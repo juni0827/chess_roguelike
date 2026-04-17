@@ -140,14 +140,14 @@ This should feel **stylized and memorable**, but never sacrifice core tactical r
 
 ## 3) What to borrow vs what to avoid
 
-## Borrow
+### Borrow
 - Balatro’s **contrast discipline** and reward reveal cadence.
 - Into the Breach’s **intent preview clarity**.
 - Inscryption/DD2’s **dark tabletop drama** (lighting, material cues).
 - Mobile CCGs’ **state readability at tiny sizes**.
 - Wildfrost/STS’s **clean run flow screens** (map, reward, shop, choose-1).
 
-## Avoid
+### Avoid
 - Over-texturing the board so overlays become muddy.
 - Excessive chromatic/glow effects that make legal/capture/danger colors ambiguous.
 - Animations that delay tactical input.
