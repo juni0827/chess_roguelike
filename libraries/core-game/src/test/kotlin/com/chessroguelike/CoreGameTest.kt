@@ -16,6 +16,58 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CoreGameTest {
+    @Test
+    fun `king side castling is generated and executed`() {
+        val board = ChessBoard()
+        val king = board.createAndAddPiece(PieceType.KING, true, 7, 4)
+        val rook = board.createAndAddPiece(PieceType.ROOK, true, 7, 7)
+        board.createAndAddPiece(PieceType.KING, false, 0, 4)
+
+        val moves = MoveGenerator.getValidMoves(king, board, TestContentRegistry)
+        val castle = moves.find { it.toRow == 7 && it.toCol == 6 && it.castleRookFromCol == 7 }
+        assertNotNull(castle)
+
+        board.executeMove(king, requireNotNull(castle))
+
+        assertEquals(6, king.col)
+        assertEquals(5, rook.col)
+        assertTrue(king.hasMoved)
+        assertTrue(rook.hasMoved)
+    }
+
+    @Test
+    fun `en passant is available only immediately`() {
+        val board = ChessBoard()
+        val whitePawn = board.createAndAddPiece(PieceType.PAWN, true, 3, 4)
+        val blackPawn = board.createAndAddPiece(PieceType.PAWN, false, 1, 5)
+        board.createAndAddPiece(PieceType.KING, true, 7, 4)
+        board.createAndAddPiece(PieceType.KING, false, 0, 4)
+
+        board.movePiece(blackPawn, 3, 5)
+        val immediateMoves = MoveGenerator.getValidMoves(whitePawn, board, TestContentRegistry)
+        val enPassantMove = immediateMoves.find { it.toRow == 2 && it.toCol == 5 && it.enPassantCaptureId == blackPawn.id }
+        assertNotNull(enPassantMove)
+
+        board.executeMove(whitePawn, requireNotNull(enPassantMove))
+        assertEquals(null, board.getPieceById(blackPawn.id))
+        assertEquals(2, whitePawn.row)
+        assertEquals(5, whitePawn.col)
+    }
+
+    @Test
+    fun `move generator rejects moves that leave king in check`() {
+        val board = ChessBoard()
+        val king = board.createAndAddPiece(PieceType.KING, true, 7, 4)
+        val blocker = board.createAndAddPiece(PieceType.ROOK, true, 7, 3)
+        board.createAndAddPiece(PieceType.ROOK, false, 7, 0)
+        board.createAndAddPiece(PieceType.KING, false, 0, 4)
+
+        val blockerMoves = MoveGenerator.getValidMoves(blocker, board, TestContentRegistry)
+
+        assertTrue(blockerMoves.none { it.toRow == 6 && it.toCol == 3 })
+        assertTrue(MoveGenerator.getValidMoves(king, board, TestContentRegistry).isNotEmpty())
+    }
+
 
     @Test
     fun `pawn promotes to queen on final rank`() {
@@ -118,5 +170,37 @@ class CoreGameTest {
 
         assertTrue(secondRoundEvents.any { it is GameEvent.RoundCleared && it.round == 2 })
         assertEquals(310, session.state().score)
+    }
+
+    @Test
+    fun `round start repositions enemy king away from immediate trivial capture`() {
+        val noOpAi = object : AiService {
+            override fun getBestMove(
+                board: ChessBoard,
+                contentRegistry: com.chessroguelike.content.ContentRegistry,
+                round: Int,
+                rng: com.chessroguelike.game.DeterministicRng
+            ) = null
+        }
+        val session = GameSession.new(TestContentRegistry, noOpAi, seed = 17)
+        session.board.getAllPieces().forEach { piece ->
+            session.board.getPieceById(piece.id)?.let(session.board::removePiece)
+        }
+        session.board.createAndAddPiece(PieceType.KING, true, 7, 4)
+        val playerQueen = session.board.createAndAddPiece(PieceType.QUEEN, true, 1, 4)
+        session.board.createAndAddPiece(PieceType.KING, false, 0, 4)
+
+        val events = session.selectSquare(playerQueen.row, playerQueen.col).let { session.selectSquare(0, 4) }
+        assertTrue(events.any { it is GameEvent.RoundCleared })
+
+        val offeredUpgradeId = session.state().offeredUpgradeIds.first()
+        session.applyUpgrade(offeredUpgradeId, null)
+
+        val enemyKing = session.board.getEnemyPieces().first { it.type == PieceType.KING }
+        val capturesEnemyKing = session.board.getPlayerPieces().any { piece ->
+            MoveGenerator.getValidMoves(piece, session.board, TestContentRegistry)
+                .any { it.toRow == enemyKing.row && it.toCol == enemyKing.col }
+        }
+        assertFalse(capturesEnemyKing)
     }
 }

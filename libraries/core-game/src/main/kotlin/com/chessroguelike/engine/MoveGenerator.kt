@@ -6,13 +6,66 @@ import com.chessroguelike.content.ContentRegistry
 object MoveGenerator {
 
     fun getValidMoves(piece: ChessPiece, board: ChessBoard, contentRegistry: ContentRegistry): List<Move> {
+        val baseMoves = getPseudoLegalMoves(piece, board, contentRegistry)
+        return baseMoves.filter { move ->
+            val simulated = ChessBoard(board.snapshot())
+            val simulatedPiece = simulated.getPiece(piece.row, piece.col) ?: return@filter false
+            simulated.executeMove(simulatedPiece, move)
+            !isKingInCheck(simulated, piece.isPlayer, contentRegistry)
+        }
+    }
+
+    fun isKingInCheck(board: ChessBoard, isPlayerKing: Boolean, contentRegistry: ContentRegistry): Boolean {
+        val king = board.getAllPieces().find { it.type == PieceType.KING && it.isPlayer == isPlayerKing } ?: return false
+        return isSquareAttacked(board, king.row, king.col, byPlayer = !isPlayerKing, contentRegistry)
+    }
+
+    private fun isSquareAttacked(
+        board: ChessBoard,
+        row: Int,
+        col: Int,
+        byPlayer: Boolean,
+        contentRegistry: ContentRegistry
+    ): Boolean {
+        return board.getAllPieces()
+            .filter { it.isPlayer == byPlayer }
+            .any { attacker -> attacksSquare(attacker, row, col, board, contentRegistry) }
+    }
+
+    private fun attacksSquare(
+        piece: ChessPiece,
+        targetRow: Int,
+        targetCol: Int,
+        board: ChessBoard,
+        contentRegistry: ContentRegistry
+    ): Boolean {
+        return when (piece.type) {
+            PieceType.PAWN -> {
+                val direction = if (piece.isPlayer) -1 else 1
+                targetRow == piece.row + direction && (targetCol == piece.col - 1 || targetCol == piece.col + 1)
+            }
+            PieceType.KING -> kotlin.math.abs(targetRow - piece.row) <= 1 && kotlin.math.abs(targetCol - piece.col) <= 1
+            else -> {
+                getPseudoLegalMoves(piece, board, contentRegistry, includeCastling = false, includeEnPassant = false)
+                    .any { it.toRow == targetRow && it.toCol == targetCol }
+            }
+        }
+    }
+
+    private fun getPseudoLegalMoves(
+        piece: ChessPiece,
+        board: ChessBoard,
+        contentRegistry: ContentRegistry,
+        includeCastling: Boolean = true,
+        includeEnPassant: Boolean = true
+    ): List<Move> {
         val baseMoves = when (piece.type) {
-            PieceType.PAWN -> getPawnMoves(piece, board)
+            PieceType.PAWN -> getPawnMoves(piece, board, includeEnPassant)
             PieceType.ROOK -> getRookMoves(piece, board)
             PieceType.KNIGHT -> getKnightMoves(piece, board)
             PieceType.BISHOP -> getBishopMoves(piece, board)
             PieceType.QUEEN -> getQueenMoves(piece, board)
-            PieceType.KING -> getKingMoves(piece, board)
+            PieceType.KING -> getKingMoves(piece, board, contentRegistry, includeCastling)
         }
 
         return if (contentRegistry.abilityDefinition(piece.abilityId).effectType == AbilityEffectType.EXTRA_RANGE) {
@@ -81,7 +134,7 @@ object MoveGenerator {
         return moves
     }
 
-    private fun getPawnMoves(piece: ChessPiece, board: ChessBoard): List<Move> {
+    private fun getPawnMoves(piece: ChessPiece, board: ChessBoard, includeEnPassant: Boolean): List<Move> {
         val moves = mutableListOf<Move>()
         val direction = if (piece.isPlayer) -1 else 1
         val startRow = if (piece.isPlayer) 6 else 1
@@ -103,6 +156,27 @@ object MoveGenerator {
                 val target = board.getPiece(nr, nc)
                 if (target != null && target.isPlayer != piece.isPlayer) {
                     moves.add(Move(piece.row, piece.col, nr, nc, target.id))
+                }
+            }
+        }
+
+        if (includeEnPassant) {
+            val enPassant = board.enPassantTarget()
+            if (enPassant != null) {
+                val (targetRow, targetCol, captureId) = enPassant
+                if (targetRow == nr && kotlin.math.abs(targetCol - piece.col) == 1) {
+                    val vulnerablePawn = board.getPieceById(captureId)
+                    if (vulnerablePawn != null && vulnerablePawn.isPlayer != piece.isPlayer && vulnerablePawn.type == PieceType.PAWN) {
+                        moves.add(
+                            Move(
+                                fromRow = piece.row,
+                                fromCol = piece.col,
+                                toRow = targetRow,
+                                toCol = targetCol,
+                                enPassantCaptureId = captureId
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -140,7 +214,12 @@ object MoveGenerator {
             Pair(-1, -1), Pair(-1, 1), Pair(1, -1), Pair(1, 1)
         ))
 
-    private fun getKingMoves(piece: ChessPiece, board: ChessBoard): List<Move> {
+    private fun getKingMoves(
+        piece: ChessPiece,
+        board: ChessBoard,
+        contentRegistry: ContentRegistry,
+        includeCastling: Boolean
+    ): List<Move> {
         val moves = mutableListOf<Move>()
         for (dr in -1..1) {
             for (dc in -1..1) {
@@ -155,6 +234,51 @@ object MoveGenerator {
                 }
             }
         }
+
+        if (includeCastling && !piece.hasMoved && !isKingInCheck(board, piece.isPlayer, contentRegistry)) {
+            moves.addAll(getCastlingMoves(piece, board, contentRegistry))
+        }
         return moves
+    }
+
+    private fun getCastlingMoves(piece: ChessPiece, board: ChessBoard, contentRegistry: ContentRegistry): List<Move> {
+        val row = piece.row
+        val kingCol = piece.col
+        val castles = mutableListOf<Move>()
+
+        listOf(0 to 2, 7 to 6).forEach { (rookCol, kingDestinationCol) ->
+            val rook = board.getPiece(row, rookCol)
+            if (rook == null || rook.type != PieceType.ROOK || rook.isPlayer != piece.isPlayer || rook.hasMoved) {
+                return@forEach
+            }
+
+            val pathCols = if (rookCol == 0) (rookCol + 1 until kingCol) else (kingCol + 1 until rookCol)
+            if (pathCols.any { c -> board.getPiece(row, c) != null }) {
+                return@forEach
+            }
+
+            val kingPath = if (kingDestinationCol > kingCol) {
+                listOf(kingCol + 1, kingDestinationCol)
+            } else {
+                listOf(kingCol - 1, kingDestinationCol)
+            }
+
+            if (kingPath.any { c -> isSquareAttacked(board, row, c, byPlayer = !piece.isPlayer, contentRegistry) }) {
+                return@forEach
+            }
+
+            castles.add(
+                Move(
+                    fromRow = row,
+                    fromCol = kingCol,
+                    toRow = row,
+                    toCol = kingDestinationCol,
+                    castleRookFromCol = rookCol,
+                    castleRookToCol = if (rookCol == 0) 3 else 5
+                )
+            )
+        }
+
+        return castles
     }
 }

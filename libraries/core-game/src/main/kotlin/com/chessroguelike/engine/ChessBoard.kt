@@ -7,7 +7,10 @@ import kotlin.math.abs
 @Serializable
 data class BoardSnapshot(
     val pieces: List<ChessPiece>,
-    val nextId: Int
+    val nextId: Int,
+    val enPassantTargetRow: Int? = null,
+    val enPassantTargetCol: Int? = null,
+    val enPassantCapturePawnId: Int? = null
 )
 
 class ChessBoard(
@@ -15,6 +18,9 @@ class ChessBoard(
 ) {
     private val pieces = snapshot?.pieces?.map { it.copy() }?.toMutableList() ?: mutableListOf()
     private var nextId = snapshot?.nextId ?: 1
+    private var enPassantTargetRow: Int? = snapshot?.enPassantTargetRow
+    private var enPassantTargetCol: Int? = snapshot?.enPassantTargetCol
+    private var enPassantCapturePawnId: Int? = snapshot?.enPassantCapturePawnId
 
     companion object {
         const val SIZE = 8
@@ -34,8 +40,15 @@ class ChessBoard(
 
     fun getAllPieces(): List<ChessPiece> = pieces.map { it.copy() }
 
-    fun movePiece(piece: ChessPiece, toRow: Int, toCol: Int): ChessPiece? {
-        val captured = getPiece(toRow, toCol)
+    fun movePiece(piece: ChessPiece, toRow: Int, toCol: Int): ChessPiece? =
+        executeMove(piece, Move(piece.row, piece.col, toRow, toCol))
+
+    fun executeMove(piece: ChessPiece, move: Move): ChessPiece? {
+        val captured = if (move.enPassantCaptureId != null) {
+            getPieceById(move.enPassantCaptureId)
+        } else {
+            getPiece(move.toRow, move.toCol)
+        }
         if (captured != null) {
             if (captured.shieldActive) {
                 captured.shieldActive = false
@@ -43,13 +56,33 @@ class ChessBoard(
             }
             pieces.remove(captured)
         }
-        piece.row = toRow
-        piece.col = toCol
+        val fromRow = piece.row
+        piece.row = move.toRow
+        piece.col = move.toCol
+        piece.hasMoved = true
 
-        if (piece.type == PieceType.PAWN && (toRow == 0 || toRow == SIZE - 1)) {
+        if (move.castleRookFromCol != null && move.castleRookToCol != null) {
+            val rook = getPiece(move.toRow, move.castleRookFromCol)
+            if (rook != null && rook.type == PieceType.ROOK && rook.isPlayer == piece.isPlayer) {
+                rook.col = move.castleRookToCol
+                rook.hasMoved = true
+            }
+        }
+
+        if (piece.type == PieceType.PAWN && kotlin.math.abs(move.toRow - fromRow) == 2) {
+            enPassantTargetRow = (move.toRow + fromRow) / 2
+            enPassantTargetCol = move.toCol
+            enPassantCapturePawnId = piece.id
+        } else {
+            enPassantTargetRow = null
+            enPassantTargetCol = null
+            enPassantCapturePawnId = null
+        }
+
+        if (piece.type == PieceType.PAWN && (move.toRow == 0 || move.toRow == SIZE - 1)) {
             val idx = pieces.indexOfFirst { it.id == piece.id }
             if (idx >= 0) {
-                pieces[idx] = pieces[idx].copy(type = PieceType.QUEEN)
+                pieces[idx] = pieces[idx].copy(type = PieceType.QUEEN, hasMoved = true)
             }
         }
         return captured
@@ -83,6 +116,9 @@ class ChessBoard(
     fun setupInitialBoard() {
         pieces.clear()
         nextId = 1
+        enPassantTargetRow = null
+        enPassantTargetCol = null
+        enPassantCapturePawnId = null
 
         val backRowTypes = listOf(
             PieceType.ROOK, PieceType.KNIGHT, PieceType.BISHOP, PieceType.QUEEN,
@@ -118,5 +154,18 @@ class ChessBoard(
         }
     }
 
-    fun snapshot(): BoardSnapshot = BoardSnapshot(getAllPieces(), nextId)
+    fun enPassantTarget(): Triple<Int, Int, Int>? {
+        val row = enPassantTargetRow ?: return null
+        val col = enPassantTargetCol ?: return null
+        val pawnId = enPassantCapturePawnId ?: return null
+        return Triple(row, col, pawnId)
+    }
+
+    fun snapshot(): BoardSnapshot = BoardSnapshot(
+        pieces = getAllPieces(),
+        nextId = nextId,
+        enPassantTargetRow = enPassantTargetRow,
+        enPassantTargetCol = enPassantTargetCol,
+        enPassantCapturePawnId = enPassantCapturePawnId
+    )
 }

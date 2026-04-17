@@ -115,7 +115,7 @@ class EnemyAIService : AiService {
     private fun simulateMove(board: ChessBoard, move: Move): ChessBoard {
         val newBoard = ChessBoard(board.snapshot())
         val piece = newBoard.getPiece(move.fromRow, move.fromCol) ?: return newBoard
-        newBoard.movePiece(piece, move.toRow, move.toCol)
+        newBoard.executeMove(piece, move)
         return newBoard
     }
 

@@ -263,7 +263,15 @@ class GameSession private constructor(
     }
 
     private fun makeMove(piece: ChessPiece, move: Move, playerMove: Boolean): MoveResult {
-        val captured = board.movePiece(piece, move.toRow, move.toCol)
+        if (MoveGenerator.getValidMoves(piece, board, contentRegistry).none {
+                it.toRow == move.toRow && it.toCol == move.toCol &&
+                    it.enPassantCaptureId == move.enPassantCaptureId &&
+                    it.castleRookFromCol == move.castleRookFromCol
+            }) {
+            return MoveResult.INVALID
+        }
+
+        val captured = board.executeMove(piece, move)
         if (captured != null) {
             if (playerMove) {
                 capturedByPlayer++
@@ -354,7 +362,39 @@ class GameSession private constructor(
                 }
             }
         }
+
+        ensureRoundStartValidity()
     }
+
+    private fun ensureRoundStartValidity() {
+        val enemyKing = board.getEnemyPieces().find { it.type == PieceType.KING } ?: return
+        val candidateSquares = buildList {
+            for (row in 0..2) {
+                for (col in 0 until ChessBoard.SIZE) {
+                    add(row to col)
+                }
+            }
+        }
+        val safeSquare = candidateSquares.firstOrNull { (row, col) ->
+            val occupant = board.getPiece(row, col)
+            (occupant == null || occupant.id == enemyKing.id) &&
+                !isAdjacentToPlayerPiece(row, col) &&
+                !isPlayerImmediateCapture(row, col)
+        } ?: return
+
+        enemyKing.row = safeSquare.first
+        enemyKing.col = safeSquare.second
+    }
+
+    private fun isAdjacentToPlayerPiece(row: Int, col: Int): Boolean =
+        board.getPlayerPieces().any { playerPiece ->
+            kotlin.math.abs(playerPiece.row - row) <= 1 && kotlin.math.abs(playerPiece.col - col) <= 1
+        }
+
+    private fun isPlayerImmediateCapture(row: Int, col: Int): Boolean =
+        board.getPlayerPieces().any { playerPiece ->
+            MoveGenerator.getValidMoves(playerPiece, board, contentRegistry).any { it.toRow == row && it.toCol == col }
+        }
 
     private fun generateUpgradeOptions(): List<String> {
         val pool = contentRegistry.upgrades.values.toList()
