@@ -69,6 +69,15 @@ esac
 
 CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
 
+if [ -z "$JAVA_HOME" ] ; then
+    for local_jdk in "$APP_HOME"/.tools/jdk-* ; do
+        if [ -x "$local_jdk/bin/java" ] ; then
+            JAVA_HOME=$local_jdk
+            break
+        fi
+    done
+fi
+
 
 # Determine the Java command to use to start the JVM.
 if [ -n "$JAVA_HOME" ] ; then

@@ -2,29 +2,39 @@ package com.chessroguelike
 
 import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.View
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import com.chessroguelike.ai.EnemyAI
 import com.chessroguelike.databinding.ActivityGameBinding
-import com.chessroguelike.engine.*
-import com.chessroguelike.roguelike.RoundManager
-import com.chessroguelike.roguelike.Upgrade
+import com.chessroguelike.engine.ChessBoard
+import com.chessroguelike.engine.PieceType
+import com.chessroguelike.game.GameAction
+import com.chessroguelike.game.GameEvent
+import com.chessroguelike.game.GameState
 
 class GameActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityGameBinding
-    private val gameEngine = GameEngine()
-    private val roundManager = RoundManager()
-    private val handler = Handler(Looper.getMainLooper())
-    private var enemyAI = EnemyAI(1)
+    private val container by lazy { (application as ChessRoguelikeApp).appContainer }
+    private var pendingAbilityUpgradeId: String? = null
 
-    companion object {
-        const val EXTRA_UPGRADES = "upgrades"
-        const val REQUEST_UPGRADE = 1001
+    private val upgradeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode != RESULT_OK) return@registerForActivityResult
+        val upgradeId = result.data?.getStringExtra(UpgradeActivity.EXTRA_SELECTED_UPGRADE_ID) ?: return@registerForActivityResult
+        if (container.isAbilityUpgrade(upgradeId)) {
+            pendingAbilityUpgradeId = upgradeId
+            val abilityName = container.abilityNameForUpgrade(upgradeId)
+            Toast.makeText(
+                this,
+                container.localize("toast.choose_piece_for_ability", mapOf("ability" to abilityName)),
+                Toast.LENGTH_LONG
+            ).show()
+        } else {
+            handleEvents(container.dispatch(GameAction.ChooseUpgrade(upgradeId)))
+        }
+        renderCurrentState()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,192 +42,159 @@ class GameActivity : AppCompatActivity() {
         binding = ActivityGameBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        gameEngine.initGame()
         setupBoardView()
         setupButtons()
-        updateStatusUI()
+
+        if (containerState() == null) {
+            finish()
+            return
+        }
+        renderCurrentState()
     }
 
     private fun setupBoardView() {
-        binding.boardView.board = gameEngine.board
-        binding.boardView.onPieceSelected = { row, col ->
-            handlePieceSelection(row, col)
-        }
-        binding.boardView.onMoveSelected = { row, col ->
-            handleMoveSelection(row, col)
-        }
+        binding.boardView.onPieceSelected = { row, col -> handleSquareSelected(row, col) }
+        binding.boardView.onMoveSelected = { row, col -> handleSquareSelected(row, col) }
     }
 
     private fun setupButtons() {
         binding.btnSkipDoubleMove.setOnClickListener {
-            gameEngine.skipDoubleMove()
-            binding.btnSkipDoubleMove.visibility = View.GONE
-            updateBoardView()
-            updateStatusUI()
-            triggerEnemyMove()
+            handleEvents(container.dispatch(GameAction.SkipDoubleMove))
+            renderCurrentState()
         }
-
-        binding.btnEndGame.setOnClickListener {
-            showQuitConfirmDialog()
-        }
+        binding.btnEndGame.setOnClickListener { showQuitConfirmDialog() }
     }
 
-    private fun handlePieceSelection(row: Int, col: Int) {
-        if (gameEngine.turnState != TurnState.PLAYER_TURN &&
-            gameEngine.turnState != TurnState.PLAYER_DOUBLE_MOVE) return
-
-        val selected = gameEngine.selectPiece(row, col)
-        updateBoardView()
-        if (!selected) {
-            val piece = gameEngine.board.getPiece(row, col)
-            if (piece != null && !piece.isPlayer) {
-                Toast.makeText(this, "적의 기물입니다", Toast.LENGTH_SHORT).show()
+    private fun handleSquareSelected(row: Int, col: Int) {
+        val pendingUpgrade = pendingAbilityUpgradeId
+        if (pendingUpgrade != null) {
+            val board = containerState()?.let { ChessBoard(it.board) } ?: return
+            val piece = board.getPiece(row, col)
+            if (piece == null || !piece.isPlayer || piece.type == PieceType.KING) {
+                Toast.makeText(this, container.localize("toast.select_player_piece"), Toast.LENGTH_SHORT).show()
+                return
             }
-        }
-    }
-
-    private fun handleMoveSelection(row: Int, col: Int) {
-        if (gameEngine.turnState != TurnState.PLAYER_TURN &&
-            gameEngine.turnState != TurnState.PLAYER_DOUBLE_MOVE) return
-
-        val fromRow = gameEngine.selectedPiece?.row ?: return
-        val fromCol = gameEngine.selectedPiece?.col ?: return
-
-        val result = gameEngine.makePlayerMove(row, col)
-        val move = Move(fromRow, fromCol, row, col)
-        binding.boardView.setLastMove(move)
-
-        when (result) {
-            MoveResult.MOVE_OK -> {
-                updateBoardView()
-                updateStatusUI()
-                binding.btnSkipDoubleMove.visibility = View.GONE
-                triggerEnemyMove()
-            }
-            MoveResult.DOUBLE_MOVE_AVAILABLE -> {
-                updateBoardView()
-                updateStatusUI()
-                binding.btnSkipDoubleMove.visibility = View.VISIBLE
-                Toast.makeText(this, "이중 이동! 한 번 더 이동하거나 건너뛰세요", Toast.LENGTH_SHORT).show()
-            }
-            MoveResult.ROUND_WON -> {
-                updateBoardView()
-                updateStatusUI()
-                binding.btnSkipDoubleMove.visibility = View.GONE
-                handler.postDelayed({ handleRoundWon() }, 600)
-            }
-            MoveResult.GAME_OVER -> {
-                updateBoardView()
-                handleGameOver()
-            }
-            MoveResult.INVALID -> {
-                updateBoardView()
-            }
-        }
-    }
-
-    private fun triggerEnemyMove() {
-        binding.boardView.isInteractionEnabled = false
-        handler.postDelayed({
-            performEnemyMove()
-        }, 700)
-    }
-
-    private fun performEnemyMove() {
-        enemyAI = EnemyAI(roundManager.currentRound)
-        val move = enemyAI.getBestMove(gameEngine.board)
-        if (move == null) {
-            // Enemy has no moves - treat as round won
-            handleRoundWon()
+            pendingAbilityUpgradeId = null
+            handleEvents(container.dispatch(GameAction.ChooseUpgrade(pendingUpgrade, piece.id)))
+            renderCurrentState()
             return
         }
 
-        binding.boardView.setLastMove(move)
-        val result = gameEngine.makeEnemyMove(move)
-        updateBoardView()
-        updateStatusUI()
+        handleEvents(container.dispatch(GameAction.SelectSquare(row, col)))
+        renderCurrentState()
+    }
 
-        when (result) {
-            MoveResult.GAME_OVER -> {
-                handleGameOver()
-            }
-            else -> {
-                binding.boardView.isInteractionEnabled = true
+    private fun handleEvents(events: List<GameEvent>) {
+        events.forEach { event ->
+            when (event) {
+                is GameEvent.Notification -> {
+                    Toast.makeText(
+                        this,
+                        container.localize(event.message.key.value, event.message.args),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                is GameEvent.MoveExecuted -> binding.boardView.setLastMove(event.move)
+                is GameEvent.UpgradeOffered -> launchUpgradePicker(event.upgradeIds)
+                is GameEvent.RunEnded -> {
+                    if (event.victory) {
+                        showVictoryDialog(event.score, event.awardedCurrency)
+                    } else {
+                        showGameOverDialog(event.finalRound, event.score, event.awardedCurrency)
+                    }
+                }
+                else -> Unit
             }
         }
     }
 
-    private fun handleRoundWon() {
-        val capturedCount = gameEngine.capturedByPlayer
-        roundManager.addScore(capturedCount)
-
-        val round = roundManager.currentRound
-        if (round >= 5) {
-            showVictoryDialog()
-            return
-        }
-
-        val upgrades = roundManager.generateUpgradeOptions(gameEngine.board.getPlayerPieces())
+    private fun launchUpgradePicker(upgradeIds: List<String>) {
         val intent = Intent(this, UpgradeActivity::class.java).apply {
-            putParcelableArrayListExtra(EXTRA_UPGRADES, ArrayList(upgrades))
+            putStringArrayListExtra(UpgradeActivity.EXTRA_UPGRADE_IDS, ArrayList(upgradeIds))
         }
-        @Suppress("DEPRECATION")
-        startActivityForResult(intent, REQUEST_UPGRADE)
+        upgradeLauncher.launch(intent)
     }
 
-    @Suppress("DEPRECATION")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_UPGRADE && resultCode == RESULT_OK) {
-            val upgrade = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                data?.getParcelableExtra(UpgradeActivity.EXTRA_SELECTED_UPGRADE, Upgrade::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                data?.getParcelableExtra<Upgrade>(UpgradeActivity.EXTRA_SELECTED_UPGRADE)
-            }
-            val targetPieceId = data?.getIntExtra(UpgradeActivity.EXTRA_TARGET_PIECE_ID, -1) ?: -1
+    private fun renderCurrentState() {
+        val state = containerState() ?: return
+        val board = ChessBoard(state.board)
+        binding.boardView.board = board
+        binding.boardView.selectedPiece = state.selectedPieceId?.let(board::getPieceById)
+        binding.boardView.validMoves = state.validMoves
+        binding.boardView.isInteractionEnabled = true
+        binding.boardView.refresh()
 
-            if (upgrade != null) {
-                val targetPiece = if (targetPieceId >= 0)
-                    gameEngine.board.getPlayerPieces().find { it.id == targetPieceId }
-                else null
-                roundManager.applyUpgrade(gameEngine.board, upgrade, targetPiece)
+        binding.tvRoundInfo.text = container.localize(
+            "ui.game.round_info",
+            mapOf("current" to state.currentRound.toString(), "max" to state.maxRounds.toString())
+        )
+        binding.tvTurnStatus.text = when {
+            pendingAbilityUpgradeId != null -> container.localize("ui.upgrade.title")
+            else -> when (state.turnState) {
+                com.chessroguelike.engine.TurnState.PLAYER_TURN -> container.localize("ui.game.turn.player")
+                com.chessroguelike.engine.TurnState.PLAYER_DOUBLE_MOVE -> container.localize("ui.game.turn.player_double")
+                com.chessroguelike.engine.TurnState.ENEMY_TURN -> container.localize("ui.game.turn.enemy")
+                com.chessroguelike.engine.TurnState.ROUND_WON -> container.localize("ui.game.turn.round_won")
+                com.chessroguelike.engine.TurnState.GAME_OVER -> container.localize("ui.game.turn.game_over")
             }
-
-            roundManager.nextRound()
-            roundManager.generateEnemySetup(gameEngine.board)
-            gameEngine.startNextRound()
-            enemyAI = EnemyAI(roundManager.currentRound)
-            binding.boardView.setLastMove(null)
-            updateBoardView()
-            updateStatusUI()
         }
+        binding.tvScore.text = container.localize("ui.game.score", mapOf("score" to state.score.toString()))
+        binding.tvPlayerPieces.text = container.localize(
+            "ui.game.player_pieces",
+            mapOf("count" to board.getPlayerPieces().size.toString())
+        )
+        binding.tvEnemyPieces.text = container.localize(
+            "ui.game.enemy_pieces",
+            mapOf("count" to board.getEnemyPieces().size.toString())
+        )
+        binding.btnSkipDoubleMove.text = container.localize("ui.game.skip_double_move")
+        binding.btnEndGame.text = container.localize("ui.game.end_game")
+        binding.btnSkipDoubleMove.visibility =
+            if (state.turnState == com.chessroguelike.engine.TurnState.PLAYER_DOUBLE_MOVE) View.VISIBLE else View.GONE
     }
 
-    private fun handleGameOver() {
-        binding.boardView.isInteractionEnabled = false
+    private fun showGameOverDialog(round: Int, score: Int, awardedCurrency: Int) {
         AlertDialog.Builder(this)
-            .setTitle("게임 오버")
-            .setMessage("킹이 잡혔습니다!\n\n라운드: ${roundManager.currentRound}\n점수: ${roundManager.score}")
-            .setPositiveButton("다시 시작") { _, _ ->
-                recreate()
+            .setTitle(container.localize("dialog.game_over.title"))
+            .setMessage(
+                container.localize(
+                    "dialog.game_over.body",
+                    mapOf(
+                        "round" to round.toString(),
+                        "score" to score.toString(),
+                        "currency" to awardedCurrency.toString()
+                    )
+                )
+            )
+            .setPositiveButton(container.localize("dialog.common.restart")) { _, _ ->
+                pendingAbilityUpgradeId = null
+                binding.boardView.setLastMove(null)
+                container.startNewRun()
+                renderCurrentState()
             }
-            .setNegativeButton("메인 메뉴") { _, _ ->
+            .setNegativeButton(container.localize("dialog.common.main_menu")) { _, _ ->
                 finish()
             }
             .setCancelable(false)
             .show()
     }
 
-    private fun showVictoryDialog() {
-        binding.boardView.isInteractionEnabled = false
+    private fun showVictoryDialog(score: Int, awardedCurrency: Int) {
         AlertDialog.Builder(this)
-            .setTitle("🏆 승리!")
-            .setMessage("5 라운드를 모두 클리어했습니다!\n\n최종 점수: ${roundManager.score}\n포획한 기물: ${gameEngine.capturedByPlayer}")
-            .setPositiveButton("다시 시작") { _, _ ->
-                recreate()
+            .setTitle(container.localize("dialog.victory.title"))
+            .setMessage(
+                container.localize(
+                    "dialog.victory.body",
+                    mapOf("score" to score.toString(), "currency" to awardedCurrency.toString())
+                )
+            )
+            .setPositiveButton(container.localize("dialog.common.restart")) { _, _ ->
+                pendingAbilityUpgradeId = null
+                binding.boardView.setLastMove(null)
+                container.startNewRun()
+                renderCurrentState()
             }
-            .setNegativeButton("메인 메뉴") { _, _ ->
+            .setNegativeButton(container.localize("dialog.common.main_menu")) { _, _ ->
                 finish()
             }
             .setCancelable(false)
@@ -226,39 +203,15 @@ class GameActivity : AppCompatActivity() {
 
     private fun showQuitConfirmDialog() {
         AlertDialog.Builder(this)
-            .setTitle("게임 종료")
-            .setMessage("게임을 종료하시겠습니까?")
-            .setPositiveButton("종료") { _, _ -> finish() }
-            .setNegativeButton("취소", null)
+            .setTitle(container.localize("dialog.quit.title"))
+            .setMessage(container.localize("dialog.quit.body"))
+            .setPositiveButton(container.localize("dialog.common.confirm")) { _, _ ->
+                container.clearRun()
+                finish()
+            }
+            .setNegativeButton(container.localize("dialog.common.cancel"), null)
             .show()
     }
 
-    private fun updateBoardView() {
-        binding.boardView.selectedPiece = gameEngine.selectedPiece
-        binding.boardView.validMoves = gameEngine.validMoves
-        binding.boardView.refresh()
-    }
-
-    private fun updateStatusUI() {
-        val turnText = when (gameEngine.turnState) {
-            TurnState.PLAYER_TURN -> "플레이어 턴"
-            TurnState.PLAYER_DOUBLE_MOVE -> "이중 이동 - 한 번 더!"
-            TurnState.ENEMY_TURN -> "적 턴..."
-            TurnState.ROUND_WON -> "라운드 승리!"
-            TurnState.GAME_OVER -> "게임 오버"
-        }
-        binding.tvTurnStatus.text = turnText
-        binding.tvRoundInfo.text = "라운드 ${roundManager.currentRound}/5"
-        binding.tvScore.text = "점수: ${roundManager.score}"
-
-        val playerPieces = gameEngine.board.getPlayerPieces()
-        val enemyPieces = gameEngine.board.getEnemyPieces()
-        binding.tvPlayerPieces.text = "내 기물: ${playerPieces.size}개"
-        binding.tvEnemyPieces.text = "적 기물: ${enemyPieces.size}개"
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        handler.removeCallbacksAndMessages(null)
-    }
+    private fun containerState(): GameState? = container.state()
 }

@@ -18,7 +18,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="라운드 1/5"
             android:textSize="14sp"
             android:textColor="@color/text_primary"
             android:textStyle="bold" />
@@ -28,7 +27,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="플레이어 턴"
             android:textSize="14sp"
             android:textColor="@color/valid_move_highlight"
             android:textStyle="bold"
@@ -39,7 +37,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="점수: 0"
             android:textSize="14sp"
             android:textColor="@color/text_primary"
             android:gravity="end" />
@@ -71,7 +68,6 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="내 기물: 16개"
                 android:textSize="13sp"
                 android:textColor="@color/player_piece_color" />
 
@@ -80,7 +76,6 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="적 기물: 16개"
                 android:textSize="13sp"
                 android:textColor="@color/enemy_piece_color"
                 android:gravity="end" />
@@ -90,7 +85,6 @@
             android:id="@+id/btnSkipDoubleMove"
             android:layout_width="match_parent"
             android:layout_height="40dp"
-            android:text="이중 이동 건너뛰기"
             android:textSize="13sp"
             android:background="@drawable/bg_button"
             android:textColor="@android:color/white"
@@ -101,7 +95,6 @@
             android:id="@+id/btnEndGame"
             android:layout_width="match_parent"
             android:layout_height="40dp"
-            android:text="게임 종료"
             android:textSize="13sp"
             android:backgroundTint="@color/enemy_piece_color"
             android:textColor="@android:color/white" />

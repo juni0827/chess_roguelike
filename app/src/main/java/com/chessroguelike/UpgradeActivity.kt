@@ -4,27 +4,22 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.chessroguelike.databinding.ActivityUpgradeBinding
 import com.chessroguelike.databinding.ItemUpgradeBinding
-import com.chessroguelike.engine.Ability
-import com.chessroguelike.roguelike.Upgrade
-import com.chessroguelike.roguelike.UpgradeType
 
 class UpgradeActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityUpgradeBinding
+    private val container by lazy { (application as ChessRoguelikeApp).appContainer }
 
     companion object {
-        const val EXTRA_SELECTED_UPGRADE = "selected_upgrade"
-        const val EXTRA_TARGET_PIECE_ID = "target_piece_id"
-        const val PIECE_ID_AUTO_SELECT = -2
+        const val EXTRA_UPGRADE_IDS = "upgrade_ids"
+        const val EXTRA_SELECTED_UPGRADE_ID = "selected_upgrade_id"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,66 +27,48 @@ class UpgradeActivity : AppCompatActivity() {
         binding = ActivityUpgradeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val upgrades = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableArrayListExtra(GameActivity.EXTRA_UPGRADES, Upgrade::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableArrayListExtra<Upgrade>(GameActivity.EXTRA_UPGRADES)
-        } ?: run {
+        val upgradeIds = intent.getStringArrayListExtra(EXTRA_UPGRADE_IDS)
+        if (upgradeIds.isNullOrEmpty()) {
             setResult(Activity.RESULT_CANCELED)
             finish()
             return
         }
 
-        binding.tvUpgradeTitle.text = "업그레이드를 선택하세요"
-        binding.tvUpgradeSubtitle.text = "라운드 클리어! 3가지 중 하나를 선택하세요"
-
-        val adapter = UpgradeAdapter(upgrades) { upgrade ->
-            handleUpgradeSelected(upgrade)
-        }
+        binding.tvUpgradeTitle.text = container.localize("ui.upgrade.title")
+        binding.tvUpgradeSubtitle.text = container.localize("ui.upgrade.subtitle")
         binding.rvUpgrades.layoutManager = LinearLayoutManager(this)
-        binding.rvUpgrades.adapter = adapter
-    }
-
-    private fun handleUpgradeSelected(upgrade: Upgrade) {
-        when (upgrade.upgradeType) {
-            is UpgradeType.AddAbility -> {
-                showPieceSelectionDialog(upgrade)
-            }
-            else -> {
-                confirmAndFinish(upgrade, -1)
-            }
+        binding.rvUpgrades.adapter = UpgradeAdapter(upgradeIds, container) { upgradeId ->
+            showConfirmDialog(upgradeId)
         }
     }
 
-    private fun showPieceSelectionDialog(upgrade: Upgrade) {
-        val ability = (upgrade.upgradeType as UpgradeType.AddAbility).ability
-        Toast.makeText(this, "${ability.displayName} 능력을 부여할 기물을 선택하세요", Toast.LENGTH_LONG).show()
-        // For simplicity, auto-select first non-king player piece
-        // In a real app, you'd show a board overlay for piece selection
-        confirmAndFinish(upgrade, PIECE_ID_AUTO_SELECT)
-    }
-
-    private fun confirmAndFinish(upgrade: Upgrade, pieceId: Int) {
+    private fun showConfirmDialog(upgradeId: String) {
+        val name = container.upgradeName(upgradeId)
+        val description = container.upgradeDescription(upgradeId)
         AlertDialog.Builder(this)
-            .setTitle("업그레이드 확인")
-            .setMessage("'${upgrade.name}'을(를) 선택하시겠습니까?\n\n${upgrade.description}")
-            .setPositiveButton("선택") { _, _ ->
-                val result = Intent().apply {
-                    putExtra(EXTRA_SELECTED_UPGRADE, upgrade)
-                    putExtra(EXTRA_TARGET_PIECE_ID, pieceId)
-                }
-                setResult(Activity.RESULT_OK, result)
+            .setTitle(container.localize("dialog.upgrade.confirm.title"))
+            .setMessage(
+                container.localize(
+                    "dialog.upgrade.confirm.body",
+                    mapOf("name" to name, "description" to description)
+                )
+            )
+            .setPositiveButton(container.localize("dialog.common.confirm")) { _, _ ->
+                setResult(
+                    Activity.RESULT_OK,
+                    Intent().putExtra(EXTRA_SELECTED_UPGRADE_ID, upgradeId)
+                )
                 finish()
             }
-            .setNegativeButton("취소", null)
+            .setNegativeButton(container.localize("dialog.common.cancel"), null)
             .show()
     }
 }
 
 class UpgradeAdapter(
-    private val upgrades: List<Upgrade>,
-    private val onUpgradeClick: (Upgrade) -> Unit
+    private val upgradeIds: List<String>,
+    private val container: com.chessroguelike.app.AppContainer,
+    private val onUpgradeClick: (String) -> Unit
 ) : RecyclerView.Adapter<UpgradeAdapter.ViewHolder>() {
 
     inner class ViewHolder(val binding: ItemUpgradeBinding) : RecyclerView.ViewHolder(binding.root)
@@ -102,14 +79,14 @@ class UpgradeAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val upgrade = upgrades[position]
+        val upgradeId = upgradeIds[position]
         with(holder.binding) {
-            tvUpgradeIcon.text = upgrade.icon
-            tvUpgradeName.text = upgrade.name
-            tvUpgradeDescription.text = upgrade.description
-            root.setOnClickListener { onUpgradeClick(upgrade) }
+            tvUpgradeIcon.text = container.upgradeIcon(upgradeId)
+            tvUpgradeName.text = container.upgradeName(upgradeId)
+            tvUpgradeDescription.text = container.upgradeDescription(upgradeId)
+            root.setOnClickListener { onUpgradeClick(upgradeId) }
         }
     }
 
-    override fun getItemCount() = upgrades.size
+    override fun getItemCount() = upgradeIds.size
 }

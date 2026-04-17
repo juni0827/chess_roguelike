@@ -11,7 +11,6 @@
         android:id="@+id/tvGameTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/app_name"
         android:textSize="36sp"
         android:textColor="@color/text_primary"
         android:textStyle="bold"
@@ -22,11 +21,10 @@
         android:id="@+id/tvSubtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/subtitle"
         android:textSize="16sp"
         android:textColor="@color/text_secondary"
         android:gravity="center"
-        android:layout_marginBottom="48dp" />
+        android:layout_marginBottom="24dp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -48,12 +46,72 @@
         android:id="@+id/btnStartGame"
         android:layout_width="240dp"
         android:layout_height="56dp"
-        android:text="@string/start_game"
         android:textSize="18sp"
         android:textStyle="bold"
         android:background="@drawable/bg_button"
         android:textColor="@android:color/white"
-        android:layout_marginBottom="32dp" />
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnContinueGame"
+        android:layout_width="240dp"
+        android:layout_height="56dp"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:background="@drawable/bg_button"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnImportMod"
+        android:layout_width="240dp"
+        android:layout_height="48dp"
+        android:textSize="14sp"
+        android:background="@drawable/bg_button"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnLanguage"
+        android:layout_width="240dp"
+        android:layout_height="48dp"
+        android:textSize="14sp"
+        android:background="@drawable/bg_button"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tvProfileSummary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
+        android:layout_marginBottom="6dp" />
+
+    <TextView
+        android:id="@+id/tvModSummary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/tvLocaleSummary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/tvRunSummary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/enemy_piece_color"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:layout_marginBottom="20dp" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -69,16 +127,16 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/rules_title"
                 android:textSize="16sp"
                 android:textColor="@color/text_primary"
                 android:textStyle="bold"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="8dp"
+                android:id="@+id/tvRulesTitle" />
 
             <TextView
+                android:id="@+id/tvRulesContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/rules_content"
                 android:textSize="13sp"
                 android:textColor="@color/text_secondary"
                 android:lineSpacingMultiplier="1.4" />
