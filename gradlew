@@ -38,6 +38,9 @@ APP_HOME=$( cd "${APP_HOME:-./}" && pwd -P ) || exit
 APP_NAME="Gradle"
 APP_BASE_NAME=${0##*/}
 
+mkdir -p "$APP_HOME"/artifacts/project-cache/gradle \
+    "$APP_HOME"/artifacts/project-cache/kotlin/sessions
+
 # Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
 
@@ -70,11 +73,13 @@ esac
 CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
 
 if [ -z "$JAVA_HOME" ] ; then
-    for local_jdk in "$APP_HOME"/.tools/jdk-* ; do
-        if [ -x "$local_jdk/bin/java" ] ; then
-            JAVA_HOME=$local_jdk
-            break
-        fi
+    for local_jdk_root in "$HOME"/.local/share/chess-roguelike/tools "$APP_HOME"/.tools ; do
+        for local_jdk in "$local_jdk_root"/jdk-* ; do
+            if [ -x "$local_jdk/bin/java" ] ; then
+                JAVA_HOME=$local_jdk
+                break 2
+            fi
+        done
     done
 fi
 

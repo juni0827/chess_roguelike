@@ -1,0 +1,14 @@
+{
+  "id": "base-game",
+  "version": "1.0.0",
+  "compatibleGameVersions": {
+    "minInclusive": "1.0.0",
+    "maxInclusive": "1.0.0"
+  },
+  "dependencies": [],
+  "loadOrderHint": 0,
+  "supportedLocales": [
+    "ko-KR",
+    "en"
+  ]
+}

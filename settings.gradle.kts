@@ -24,3 +24,8 @@ include(":app")
 include(":core-game")
 include(":content-io")
 include(":desktop-app")
+
+project(":app").projectDir = file("apps/android")
+project(":desktop-app").projectDir = file("apps/desktop")
+project(":core-game").projectDir = file("libraries/core-game")
+project(":content-io").projectDir = file("libraries/content-io")
