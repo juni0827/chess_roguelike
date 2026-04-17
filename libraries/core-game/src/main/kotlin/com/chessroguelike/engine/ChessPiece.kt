@@ -10,7 +10,8 @@ data class ChessPiece(
     var row: Int,
     var col: Int,
     var abilityId: String = "ability.none",
-    var shieldActive: Boolean = false
+    var shieldActive: Boolean = false,
+    var hasMoved: Boolean = false
 ) {
     companion object {
         fun getUnicodeChar(type: PieceType, isPlayer: Boolean): String {
