@@ -44,10 +44,16 @@
 - 수정 모드는 `sandbox: workspace-write` + 별도 브랜치/별도 PR
 - `safety-strategy: drop-sudo` 사용 (권한 축소)
 - `concurrency`로 중복 실행 취소
+- `issue_comment` 트리거는 **base repo context** 에서 실행될 수 있으므로, `OPENAI_API_KEY` 등 시크릿이 보이는 상태로 동작할 수 있음
+- 따라서 `@codex_review`, `@codex_review fix` 같은 코멘트 명령은 **아무나 실행 가능하게 두면 안 되고**, `author_association` 기준으로 `OWNER` / `MEMBER` / `COLLABORATOR` 등 **신뢰된 사용자만 허용**하는 gate가 필요
+- 특히 `fix` 모드는 PR head checkout + 쓰기 권한이 결합되므로, **same-repo PR에서만 허용**하거나 최소한 fork PR에서는 차단하는 것을 권장
+- `pull_request` 트리거는 fork에서 올라온 PR의 경우 기본적으로 저장소 시크릿에 접근하지 못하므로, `OPENAI_API_KEY`가 필요한 Codex 리뷰는 **fork PR에서는 실패하거나 skip되는 것이 정상 동작**임
 
 ## 5) 운영 팁
 
 - `fix` 모드는 기본적으로 사람이 트리거하게 유지 (무분별한 자동 수정 방지)
+- `issue_comment` 재실행은 멤버 전용으로 제한하고, 외부 기여자 코멘트로는 실행되지 않도록 명시적으로 gate 구성
+- fork PR은 자동 리뷰가 바로 돌지 않을 수 있으므로, 필요 시 maintainer가 브랜치를 내부 저장소로 옮기거나 신뢰된 멤버가 코멘트로 재실행하는 운영 절차를 준비
 - `./gradlew test` 외에 `lint`/`detekt`를 추가해 품질 게이트 강화
 - 대형 PR은 코멘트 명령으로 재실행 시점 제어
 
