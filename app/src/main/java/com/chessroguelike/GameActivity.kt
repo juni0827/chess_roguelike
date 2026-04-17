@@ -247,14 +247,31 @@ class GameActivity : AppCompatActivity() {
             TurnState.ROUND_WON -> "라운드 승리!"
             TurnState.GAME_OVER -> "게임 오버"
         }
+
+        val threatText = when (roundManager.currentRound) {
+            1 -> "위협도: 낮음"
+            2, 3 -> "위협도: 보통"
+            else -> "위협도: 높음"
+        }
+
+        val objectiveText = when (gameEngine.turnState) {
+            TurnState.PLAYER_DOUBLE_MOVE -> "목표: 이중 이동 기회를 활용해 핵심 기물을 압박"
+            TurnState.ENEMY_TURN -> "목표: 상대 반격을 예상하고 킹을 보호"
+            else -> "목표: 적 킹을 체크메이트하고 아군 손실 최소화"
+        }
+
         binding.tvTurnStatus.text = turnText
+        binding.tvThreatLevel.text = threatText
+        binding.tvObjective.text = objectiveText
         binding.tvRoundInfo.text = "라운드 ${roundManager.currentRound}/5"
         binding.tvScore.text = "점수: ${roundManager.score}"
+        binding.progressRun.progress = roundManager.currentRound.coerceIn(1, 5)
 
         val playerPieces = gameEngine.board.getPlayerPieces()
         val enemyPieces = gameEngine.board.getEnemyPieces()
         binding.tvPlayerPieces.text = "내 기물: ${playerPieces.size}개"
         binding.tvEnemyPieces.text = "적 기물: ${enemyPieces.size}개"
+        binding.tvCaptured.text = "포획: ${gameEngine.capturedByPlayer}"
     }
 
     override fun onDestroy() {
