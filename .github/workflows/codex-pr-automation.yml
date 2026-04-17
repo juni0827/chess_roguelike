@@ -35,10 +35,30 @@ jobs:
         with:
           ref: refs/pull/${{ github.event.pull_request.number || github.event.issue.number }}/head
 
+      - name: Resolve PR base branch
+        id: resolve_pr_base
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            if (context.payload.pull_request?.base?.ref) {
+              core.setOutput('base_ref', context.payload.pull_request.base.ref);
+              return;
+            }
+
+            const pull_number = context.payload.issue.number;
+            const { data: pull } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number,
+            });
+
+            core.setOutput('base_ref', pull.base.ref);
+
       - name: Fetch base/head refs
         env:
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
-          PR_BASE_REF: ${{ github.event.pull_request.base.ref || 'main' }}
+          PR_BASE_REF: ${{ steps.resolve_pr_base.outputs.base_ref }}
         run: |
           git fetch --no-tags origin "$PR_BASE_REF" "+refs/pull/$PR_NUMBER/head"
 
