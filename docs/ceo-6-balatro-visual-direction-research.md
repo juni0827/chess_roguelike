@@ -15,54 +15,54 @@ This should feel **stylized and memorable**, but never sacrifice core tactical r
 
 ## 1) Reference clusters
 
-## A. Core mood and presentation language
+### A. Core mood and presentation language
 
-### A1. Balatro (primary mood anchor)
+#### A1. Balatro (primary mood anchor)
 - https://store.steampowered.com/app/2379780/Balatro/
 - Why relevant:
   - Strong color contrast and clear card silhouettes.
   - Premium-feeling retro treatment (CRT fuzz + pixel texture + neon accents) without losing legibility.
   - Excellent “reward anticipation” pacing (shop, blind reveal, score ramp).
 
-### A2. Inscryption (dark card-table narrative mood)
+#### A2. Inscryption (dark card-table narrative mood)
 - https://store.steampowered.com/app/1092790/Inscryption/
 - Why relevant:
   - Tabletop intimacy + ritualized interactions.
   - Controlled use of darkness/vignette to push attention to action center.
 
-### A3. Darkest Dungeon II (dark fantasy intensity and framing)
+#### A3. Darkest Dungeon II (dark fantasy intensity and framing)
 - https://store.steampowered.com/app/1940340/Darkest_Dungeon_II/
 - Why relevant:
   - High-drama gothic framing, strong iconography language.
   - Good inspiration for danger/pain/debuff visual semantics.
 
-### A4. Wildfrost (stylized board+card readability)
+#### A4. Wildfrost (stylized board+card readability)
 - https://store.steampowered.com/app/1811990/Wildfrost/
 - Why relevant:
   - Clear board lanes, compact tooltips, and status readability.
   - Friendly but disciplined UI hierarchy.
 
-## B. Tactical board readability and intent communication
+### B. Tactical board readability and intent communication
 
-### B1. Into the Breach (gold standard for tactical parse speed)
+#### B1. Into the Breach (gold standard for tactical parse speed)
 - https://store.steampowered.com/app/590380/Into_the_Breach/
 - Why relevant:
   - Encodes intent, danger, and outcomes with very little noise.
   - Board remains readable under dense states.
 
-### B2. Fights in Tight Spaces (threat + action telegraphing)
+#### B2. Fights in Tight Spaces (threat + action telegraphing)
 - https://store.steampowered.com/app/1265820/Fights_in_Tight_Spaces/
 - Why relevant:
   - Excellent target lines and planned-action readability.
 
-### B3. Tactical Breach Wizards (ability readability in dense tactical scenes)
+#### B3. Tactical Breach Wizards (ability readability in dense tactical scenes)
 - https://store.steampowered.com/app/1043810/Tactical_Breach_Wizards/
 - Why relevant:
   - Great use of previews and constrained color language.
 
-## C. Reward/shop/map cadence references
+### C. Reward/shop/map cadence references
 
-### C1. Slay the Spire (run cadence + map/reward/shop rhythm)
+#### C1. Slay the Spire (run cadence + map/reward/shop rhythm)
 - https://store.steampowered.com/app/646570/Slay_the_Spire/
 - Why relevant:
   - Minimal UI, strong pacing between fights and rewards.
