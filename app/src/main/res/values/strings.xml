@@ -1,19 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">체스 로그라이크</string>
-    <string name="subtitle">체스 기반 로그라이크 RPG</string>
-    <string name="start_game">새 게임 시작</string>
-    <string name="rules_title">게임 규칙</string>
-    <string name="rules_content">• 플레이어와 적이 번갈아 체스 기물을 이동합니다\n• 적의 킹을 잡으면 라운드에서 승리합니다\n• 라운드 승리 후 3가지 업그레이드 중 하나를 선택합니다\n• 적은 라운드마다 점점 강해집니다\n• 플레이어의 킹이 잡히면 게임이 종료됩니다\n• 5 라운드를 클리어하면 승리합니다\n\n특수 능력:\n✨ 이중 이동: 한 턴에 두 번 이동\n🛡️ 방어막: 한 번의 공격 방어\n💥 폭발: 포획 시 주변 적 제거\n📏 확장 사거리: 이동 범위 증가</string>
-    <string name="player_turn">플레이어 턴</string>
-    <string name="enemy_turn">적 턴</string>
-    <string name="round_won">라운드 승리!</string>
-    <string name="game_over">게임 오버</string>
-    <string name="victory">승리!</string>
-    <string name="select_upgrade">업그레이드 선택</string>
-    <string name="quit_game">게임 종료</string>
-    <string name="restart">다시 시작</string>
-    <string name="main_menu">메인 메뉴</string>
-    <string name="cancel">취소</string>
-    <string name="confirm">확인</string>
 </resources>

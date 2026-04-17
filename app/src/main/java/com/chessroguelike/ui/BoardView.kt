@@ -11,7 +11,6 @@ import android.view.View
 import com.chessroguelike.engine.ChessBoard
 import com.chessroguelike.engine.ChessPiece
 import com.chessroguelike.engine.Move
-import com.chessroguelike.engine.PieceType
 
 class BoardView @JvmOverloads constructor(
     context: Context,
@@ -151,7 +150,7 @@ class BoardView @JvmOverloads constructor(
             }
 
             // Ability dot indicator
-            if (piece.ability != com.chessroguelike.engine.Ability.NONE) {
+            if (piece.abilityId != com.chessroguelike.content.ContentRegistry.BUILTIN_ABILITY_NONE) {
                 val dotX = boardOffsetX + piece.col * squareSize + squareSize - 10f
                 val dotY = boardOffsetY + piece.row * squareSize + 10f
                 canvas.drawCircle(dotX, dotY, 5f, abilityDotPaint)

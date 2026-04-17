@@ -108,7 +108,6 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="내 기물: 16개"
                 android:textSize="13sp"
                 android:textColor="@color/player_piece_color" />
 
@@ -125,7 +124,6 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="적 기물: 16개"
                 android:textSize="13sp"
                 android:textColor="@color/enemy_piece_color"
                 android:gravity="end" />

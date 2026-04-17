@@ -21,3 +21,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "ChessRoguelike"
 include(":app")
+include(":core-game")
+include(":content-io")
+include(":desktop-app")
