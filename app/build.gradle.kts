@@ -51,3 +51,34 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
+
+val debugApkSource = layout.buildDirectory.file("outputs/apk/debug/app-debug.apk")
+val debugApkTarget = layout.projectDirectory.file("chess-roguelike.apk")
+val releaseApkSource = layout.buildDirectory.file("outputs/apk/release/app-release.apk")
+val releaseApkTarget = layout.projectDirectory.file("chess-roguelike-release.apk")
+
+val exportDebugApkToRoot by tasks.registering {
+    inputs.file(debugApkSource)
+    outputs.file(debugApkTarget)
+    doLast {
+        debugApkSource.get().asFile.copyTo(debugApkTarget.asFile, overwrite = true)
+    }
+}
+
+val exportReleaseApkToRoot by tasks.registering {
+    inputs.file(releaseApkSource)
+    outputs.file(releaseApkTarget)
+    doLast {
+        releaseApkSource.get().asFile.copyTo(releaseApkTarget.asFile, overwrite = true)
+    }
+}
+
+afterEvaluate {
+    tasks.named("assembleDebug") {
+        finalizedBy(exportDebugApkToRoot)
+    }
+
+    tasks.named("assembleRelease") {
+        finalizedBy(exportReleaseApkToRoot)
+    }
+}
