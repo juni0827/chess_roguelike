@@ -44,9 +44,9 @@
 
 - 트리거: 능력형 업그레이드 선택 직후
 - 차이점
-  - 상단 목표 텍스트를 "능력 부여할 아군 기물 선택"으로 강제 오버라이드
-  - 하단에 "취소 불가/선택 필요" 안내를 P1로 표시
-  - 유효하지 않은 선택(적군, 킹, 빈 칸) 시 P0 경고 토스트
+  - 상단 목표 텍스트는 고정 문구 하드코딩 대신 localization key(예: `objective.targetSelection`)로 강제 오버라이드
+  - 하단 P1 안내도 고정 문구 대신 localization key(예: `notice.selectionRequired.noCancel`)로 표시
+  - 유효하지 않은 선택(적군, 킹, 빈 칸) 시 P0 경고 토스트를 localization key(예: `toast.invalidTarget.enemy`, `toast.invalidTarget.king`, `toast.invalidTarget.empty`) 기준으로 노출
 
 ## S3. 적 턴 관전 HUD (Enemy Turn Watch)
 
