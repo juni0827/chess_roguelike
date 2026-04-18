@@ -68,3 +68,7 @@ assets/...
 - 모딩 범위: 데이터 기반 정의, 텍스트, 아이콘/리소스 override
 - 저장: 로컬 JSON snapshot
 - 규칙 확장: 폰 자동 퀸 승격 포함
+## Design Docs
+
+- `docs/dev-3-visual-reference-style-direction.md` - DEV-3 비주얼 레퍼런스 및 스타일 방향 기준 문서
+
