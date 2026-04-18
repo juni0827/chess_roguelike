@@ -63,9 +63,6 @@ assets/...
 유저 모드는 데스크톱에서 `~/.chess-roguelike/mods`, Android에서는 앱 내부 저장소 `files/mods` 아래에 풀립니다.
 
 
-## Project Operations
-
-- [DEV-6 전투 HUD와 정보 우선순위 설계](docs/dev-6-combat-hud-information-priority.md)
 
 ## Current Scope
 
