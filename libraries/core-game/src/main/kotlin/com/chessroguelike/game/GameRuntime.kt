@@ -20,6 +20,7 @@ class GameRuntime(
         private set
 
     private var session: GameSession? = null
+    private var phase: RunPhase = RunPhase.IDLE
 
     /**
      * The [GameModeManager] for Strategy-pattern hot-swapping.
@@ -33,9 +34,12 @@ class GameRuntime(
 
     fun currentState(): GameState? = session?.state()
 
+    fun currentPhase(): RunPhase = phase
+
     fun dispatch(action: GameAction): List<GameEvent> {
-        return when (action) {
+        val events = when (action) {
             is GameAction.StartRun -> {
+                if (session != null) return emptyList()
                 val newSession = GameSession.new(contentRegistry, aiService, action.seed, eventBus)
                 session = newSession
                 val strategy: GameModeStrategy = TurnBasedStrategy()
@@ -72,9 +76,22 @@ class GameRuntime(
                 }
                 listOf(GameEvent.StateChanged)
             }
-            is GameAction.SelectSquare -> session?.selectSquare(action.row, action.col) ?: emptyList()
-            GameAction.SkipDoubleMove -> session?.skipDoubleMove() ?: emptyList()
-            is GameAction.ChooseUpgrade -> session?.applyUpgrade(action.upgradeId, action.targetPieceId) ?: emptyList()
+            is GameAction.SelectSquare -> {
+                if (phase != RunPhase.PLAYER_INPUT && phase != RunPhase.PLAYER_DOUBLE_INPUT) return emptyList()
+                modeManager?.handleSelectSquare(action.row, action.col) ?: emptyList()
+            }
+            GameAction.SkipDoubleMove -> {
+                if (phase != RunPhase.PLAYER_DOUBLE_INPUT) return emptyList()
+                modeManager?.skipDoubleMove() ?: emptyList()
+            }
+            is GameAction.Tick -> {
+                if (session == null || modeManager == null) return emptyList()
+                modeManager?.tick(action.deltaSeconds) ?: emptyList()
+            }
+            is GameAction.ChooseUpgrade -> {
+                if (phase != RunPhase.UPGRADE_REWARD) return emptyList()
+                session?.applyUpgrade(action.upgradeId, action.targetPieceId) ?: emptyList()
+            }
             is GameAction.SpendMetaCurrency -> {
                 profile = MetaProgression.unlock(profile, action.nodeId)
                 listOf(GameEvent.SaveRequired)
@@ -85,6 +102,8 @@ class GameRuntime(
                 listOf(GameEvent.SaveRequired, GameEvent.StateChanged)
             }
         }.mapEventsForProfile()
+        refreshPhase()
+        return events
     }
 
     fun snapshot(): SaveSnapshot = SaveSnapshot(
@@ -109,10 +128,15 @@ class GameRuntime(
                     )
                     session = null
                     modeManager = null
+                    phase = RunPhase.IDLE
                     event
                 }
                 else -> event
             }
         }
+    }
+
+    private fun refreshPhase() {
+        phase = session?.state()?.phase ?: RunPhase.IDLE
     }
 }

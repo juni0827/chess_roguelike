@@ -62,6 +62,11 @@ assets/...
 
 유저 모드는 데스크톱에서 `~/.chess-roguelike/mods`, Android에서는 앱 내부 저장소 `files/mods` 아래에 풀립니다.
 
+
+## Project Operations
+
+- [DEV-6 전투 HUD와 정보 우선순위 설계](docs/dev-6-combat-hud-information-priority.md)
+
 ## Current Scope
 
 - 공식 초기 언어: `ko-KR`, `en`
@@ -73,5 +78,7 @@ assets/...
 ## Project Operations
 
 - CEO-10 스펙: [docs/ceo-10-player-needs-core-fantasy-definition.md](docs/ceo-10-player-needs-core-fantasy-definition.md)
-- CEO-6 리서치: [docs/ceo-6-balatro-visual-direction-research.md](docs/ceo-6-balatro-visual-direction-research.md)
+- DEV-10 구현 지시서: [docs/dev-10-data-structure-implementation-guide.md](docs/dev-10-data-structure-implementation-guide.md)
+- [CEO-12: Make promotion demo completion guide](docs/ceo-12-make-promotion-demo.md)
 - CEO-8 리서치: [docs/ceo-8-roguelike-progression-research.md](docs/ceo-8-roguelike-progression-research.md)
+- CEO-6 리서치: [docs/ceo-6-balatro-visual-direction-research.md](docs/ceo-6-balatro-visual-direction-research.md)

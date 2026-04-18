@@ -9,6 +9,7 @@ import com.chessroguelike.game.GameAction
 import com.chessroguelike.game.GameEvent
 import com.chessroguelike.game.GameSession
 import com.chessroguelike.game.GameRuntime
+import com.chessroguelike.game.RunPhase
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -89,6 +90,33 @@ class CoreGameTest {
         session.selectSquare(pawn.row - 1, pawn.col)
 
         assertEquals(com.chessroguelike.engine.TurnState.PLAYER_DOUBLE_MOVE, session.state().turnState)
+        assertEquals(RunPhase.PLAYER_DOUBLE_INPUT, session.state().phase)
+    }
+
+    @Test
+    fun `runtime phase follows state machine transitions`() {
+        val runtime = GameRuntime(TestContentRegistry, EnemyAIService())
+        runtime.dispatch(GameAction.StartRun(seed = 333))
+        assertEquals(RunPhase.PLAYER_INPUT, runtime.currentPhase())
+
+        val state = requireNotNull(runtime.currentState())
+        val board = ChessBoard(state.board)
+        val pawn = board.getPlayerPieces().first { it.type == PieceType.PAWN }
+
+        runtime.dispatch(GameAction.SelectSquare(pawn.row, pawn.col))
+        runtime.dispatch(GameAction.SelectSquare(pawn.row - 1, pawn.col))
+
+        assertEquals(RunPhase.PLAYER_INPUT, runtime.currentPhase())
+    }
+
+    @Test
+    fun `runtime rejects out of phase actions`() {
+        val runtime = GameRuntime(TestContentRegistry, EnemyAIService())
+
+        assertTrue(runtime.dispatch(GameAction.SelectSquare(6, 0)).isEmpty())
+
+        runtime.dispatch(GameAction.StartRun(seed = 444))
+        assertTrue(runtime.dispatch(GameAction.ChooseUpgrade("upgrade.heal")).isEmpty())
     }
 
     @Test
