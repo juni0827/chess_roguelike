@@ -72,5 +72,5 @@ assets/...
 
 ## Project Operations
 
-- DEV-10 구현 지시서: `docs/dev-10-data-structure-implementation-guide.md`
+- DEV-10 구현 지시서: [docs/dev-10-data-structure-implementation-guide.md](docs/dev-10-data-structure-implementation-guide.md)
 
