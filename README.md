@@ -68,3 +68,10 @@ assets/...
 - 모딩 범위: 데이터 기반 정의, 텍스트, 아이콘/리소스 override
 - 저장: 로컬 JSON snapshot
 - 규칙 확장: 폰 자동 퀸 승격 포함
+
+
+## Project Operations
+
+- CEO-10 스펙: `docs/ceo-10-player-needs-core-fantasy-definition.md`
+- CEO-6 리서치: `docs/ceo-6-balatro-visual-direction-research.md`
+- CEO-8 리서치: `docs/ceo-8-roguelike-progression-research.md`
