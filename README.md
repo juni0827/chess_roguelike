@@ -68,3 +68,9 @@ assets/...
 - 모딩 범위: 데이터 기반 정의, 텍스트, 아이콘/리소스 override
 - 저장: 로컬 JSON snapshot
 - 규칙 확장: 폰 자동 퀸 승격 포함
+
+
+## Project Operations
+
+- DEV-10 구현 지시서: `docs/dev-10-data-structure-implementation-guide.md`
+
