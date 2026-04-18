@@ -72,6 +72,6 @@ assets/...
 
 ## Project Operations
 
-- CEO-10 스펙: `docs/ceo-10-player-needs-core-fantasy-definition.md`
-- CEO-6 리서치: `docs/ceo-6-balatro-visual-direction-research.md`
-- CEO-8 리서치: `docs/ceo-8-roguelike-progression-research.md`
+- CEO-10 스펙: [docs/ceo-10-player-needs-core-fantasy-definition.md](docs/ceo-10-player-needs-core-fantasy-definition.md)
+- CEO-6 리서치: [docs/ceo-6-balatro-visual-direction-research.md](docs/ceo-6-balatro-visual-direction-research.md)
+- CEO-8 리서치: [docs/ceo-8-roguelike-progression-research.md](docs/ceo-8-roguelike-progression-research.md)
