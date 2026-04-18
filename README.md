@@ -76,6 +76,7 @@ assets/...
 
 ## Project Operations
 
+- DEV-10 구현 지시서: [docs/dev-10-data-structure-implementation-guide.md](docs/dev-10-data-structure-implementation-guide.md)
 - [CEO-12: Make promotion demo completion guide](docs/ceo-12-make-promotion-demo.md)
 - [CEO-8: Roguelike progression research](docs/ceo-8-roguelike-progression-research.md)
 - [CEO-6: Balatro-like visual direction research](docs/ceo-6-balatro-visual-direction-research.md)
