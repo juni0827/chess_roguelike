@@ -11,11 +11,19 @@ import com.chessroguelike.engine.MoveGenerator
 import com.chessroguelike.engine.MoveResult
 import com.chessroguelike.engine.PieceType
 import com.chessroguelike.engine.TurnState
+import com.chessroguelike.event.EventBus
+import com.chessroguelike.event.OnExplosion
+import com.chessroguelike.event.OnPieceDestroyed
+import com.chessroguelike.event.OnPieceMoved
+import com.chessroguelike.event.OnRoundCleared
+import com.chessroguelike.event.OnRunEnded
+import com.chessroguelike.event.OnShieldAbsorbed
+import com.chessroguelike.event.OnUpgradeOffered
 
 class GameSession private constructor(
     private val contentRegistry: ContentRegistry,
     private val aiService: AiService,
-    private val rng: DeterministicRng,
+    internal val rng: DeterministicRng,
     val board: ChessBoard,
     private var turnState: TurnState,
     private var currentRound: Int,
@@ -25,10 +33,17 @@ class GameSession private constructor(
     private var capturedByPlayer: Int,
     private var capturedByPlayerThisRound: Int,
     private var capturedByEnemy: Int,
-    private var offeredUpgradeIds: List<String>
+    private var offeredUpgradeIds: List<String>,
+    /** Optional event bus for Observer-pattern decoupling of logic and presentation. */
+    val eventBus: EventBus = EventBus()
 ) {
     companion object {
-        fun new(contentRegistry: ContentRegistry, aiService: AiService, seed: Long): GameSession {
+        fun new(
+            contentRegistry: ContentRegistry,
+            aiService: AiService,
+            seed: Long,
+            eventBus: EventBus = EventBus()
+        ): GameSession {
             val board = ChessBoard()
             board.setupInitialBoard()
             return GameSession(
@@ -44,11 +59,17 @@ class GameSession private constructor(
                 capturedByPlayer = 0,
                 capturedByPlayerThisRound = 0,
                 capturedByEnemy = 0,
-                offeredUpgradeIds = emptyList()
+                offeredUpgradeIds = emptyList(),
+                eventBus = eventBus
             )
         }
 
-        fun restore(contentRegistry: ContentRegistry, aiService: AiService, snapshot: ActiveRunSnapshot): GameSession {
+        fun restore(
+            contentRegistry: ContentRegistry,
+            aiService: AiService,
+            snapshot: ActiveRunSnapshot,
+            eventBus: EventBus = EventBus()
+        ): GameSession {
             return GameSession(
                 contentRegistry = contentRegistry,
                 aiService = aiService,
@@ -62,7 +83,8 @@ class GameSession private constructor(
                 capturedByPlayer = snapshot.capturedByPlayer,
                 capturedByPlayerThisRound = snapshot.capturedByPlayerThisRound,
                 capturedByEnemy = snapshot.capturedByEnemy,
-                offeredUpgradeIds = snapshot.offeredUpgradeIds
+                offeredUpgradeIds = snapshot.offeredUpgradeIds,
+                eventBus = eventBus
             )
         }
     }
@@ -191,6 +213,7 @@ class GameSession private constructor(
             MoveResult.ROUND_WON -> {
                 awardRoundScore()
                 if (currentRound >= contentRegistry.balance.maxRounds) {
+                    eventBus.publish(OnRunEnded(victory = true, finalRound = currentRound, score = score, awardedCurrency = runEndedCurrencyAward(true)))
                     return listOf(
                         GameEvent.MoveExecuted(move, isPlayer = true),
                         GameEvent.RunEnded(
@@ -204,6 +227,8 @@ class GameSession private constructor(
                     )
                 }
                 offeredUpgradeIds = generateUpgradeOptions()
+                eventBus.publish(OnRoundCleared(currentRound))
+                eventBus.publish(OnUpgradeOffered(offeredUpgradeIds))
                 listOf(
                     GameEvent.MoveExecuted(move, isPlayer = true),
                     GameEvent.RoundCleared(currentRound),
@@ -212,12 +237,15 @@ class GameSession private constructor(
                     GameEvent.SaveRequired
                 )
             }
-            MoveResult.GAME_OVER -> listOf(
-                GameEvent.MoveExecuted(move, isPlayer = true),
-                GameEvent.RunEnded(victory = false, finalRound = currentRound, score = score, awardedCurrency = runEndedCurrencyAward(false)),
-                GameEvent.StateChanged,
-                GameEvent.SaveRequired
-            )
+            MoveResult.GAME_OVER -> {
+                eventBus.publish(OnRunEnded(victory = false, finalRound = currentRound, score = score, awardedCurrency = runEndedCurrencyAward(false)))
+                listOf(
+                    GameEvent.MoveExecuted(move, isPlayer = true),
+                    GameEvent.RunEnded(victory = false, finalRound = currentRound, score = score, awardedCurrency = runEndedCurrencyAward(false)),
+                    GameEvent.StateChanged,
+                    GameEvent.SaveRequired
+                )
+            }
             MoveResult.MOVE_OK -> listOf(GameEvent.MoveExecuted(move, isPlayer = true)) + performEnemyTurn()
             MoveResult.INVALID -> emptyList()
         }
@@ -230,6 +258,7 @@ class GameSession private constructor(
             turnState = TurnState.ROUND_WON
             awardRoundScore()
             if (currentRound >= contentRegistry.balance.maxRounds) {
+                eventBus.publish(OnRunEnded(victory = true, finalRound = currentRound, score = score, awardedCurrency = runEndedCurrencyAward(true)))
                 return listOf(
                     GameEvent.RunEnded(
                         victory = true,
@@ -242,6 +271,8 @@ class GameSession private constructor(
                 )
             }
             offeredUpgradeIds = generateUpgradeOptions()
+            eventBus.publish(OnRoundCleared(currentRound))
+            eventBus.publish(OnUpgradeOffered(offeredUpgradeIds))
             return listOf(
                 GameEvent.RoundCleared(currentRound),
                 GameEvent.UpgradeOffered(offeredUpgradeIds),
@@ -252,12 +283,15 @@ class GameSession private constructor(
         val piece = board.getPiece(move.fromRow, move.fromCol) ?: return emptyList()
         val result = makeMove(piece, move, playerMove = false)
         return when (result) {
-            MoveResult.GAME_OVER -> listOf(
-                GameEvent.MoveExecuted(move, isPlayer = false),
-                GameEvent.RunEnded(victory = false, finalRound = currentRound, score = score, awardedCurrency = runEndedCurrencyAward(false)),
-                GameEvent.StateChanged,
-                GameEvent.SaveRequired
-            )
+            MoveResult.GAME_OVER -> {
+                eventBus.publish(OnRunEnded(victory = false, finalRound = currentRound, score = score, awardedCurrency = runEndedCurrencyAward(false)))
+                listOf(
+                    GameEvent.MoveExecuted(move, isPlayer = false),
+                    GameEvent.RunEnded(victory = false, finalRound = currentRound, score = score, awardedCurrency = runEndedCurrencyAward(false)),
+                    GameEvent.StateChanged,
+                    GameEvent.SaveRequired
+                )
+            }
             else -> listOf(GameEvent.MoveExecuted(move, isPlayer = false), GameEvent.StateChanged, GameEvent.SaveRequired)
         }
     }
@@ -279,10 +313,35 @@ class GameSession private constructor(
             } else {
                 capturedByEnemy++
             }
+            // Publish destruction event through EventBus (Observer pattern).
+            eventBus.publish(
+                OnPieceDestroyed(
+                    entityId = captured.id,
+                    destroyedByPlayer = playerMove,
+                    row = move.toRow,
+                    col = move.toCol
+                )
+            )
             if (contentRegistry.abilityDefinition(piece.abilityId).effectType == AbilityEffectType.EXPLOSION) {
                 board.explodeAround(move.toRow, move.toCol, playerMove)
+                eventBus.publish(
+                    OnExplosion(
+                        row = move.toRow,
+                        col = move.toCol,
+                        isPlayerAttacker = playerMove
+                    )
+                )
             }
         }
+
+        // Publish move event through EventBus (Observer pattern).
+        eventBus.publish(
+            OnPieceMoved(
+                move = move,
+                isPlayer = playerMove,
+                entityId = piece.id
+            )
+        )
 
         selectedPieceId = null
         validMoves = emptyList()

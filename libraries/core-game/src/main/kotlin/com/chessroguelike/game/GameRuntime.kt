@@ -2,29 +2,74 @@ package com.chessroguelike.game
 
 import com.chessroguelike.ai.AiService
 import com.chessroguelike.content.ContentRegistry
+import com.chessroguelike.event.EventBus
+import com.chessroguelike.game.strategy.GameModeManager
+import com.chessroguelike.game.strategy.GameModeStrategy
+import com.chessroguelike.game.strategy.StrategyContext
+import com.chessroguelike.game.strategy.TurnBasedStrategy
 
 class GameRuntime(
     private val contentRegistry: ContentRegistry,
     private val aiService: AiService,
     profileState: ProfileState = ProfileState(),
-    private val activeMods: List<ActiveModSnapshot> = emptyList()
+    private val activeMods: List<ActiveModSnapshot> = emptyList(),
+    /** Shared event bus for Observer-pattern decoupling. */
+    val eventBus: EventBus = EventBus()
 ) {
     var profile: ProfileState = profileState
         private set
 
     private var session: GameSession? = null
 
+    /**
+     * The [GameModeManager] for Strategy-pattern hot-swapping.
+     *
+     * Created lazily when a run starts.  Access it to swap the
+     * active strategy (e.g. from turn-based to real-time action)
+     * via [GameModeManager.swapStrategy].
+     */
+    var modeManager: GameModeManager? = null
+        private set
+
     fun currentState(): GameState? = session?.state()
 
     fun dispatch(action: GameAction): List<GameEvent> {
         return when (action) {
             is GameAction.StartRun -> {
-                session = GameSession.new(contentRegistry, aiService, action.seed)
+                val newSession = GameSession.new(contentRegistry, aiService, action.seed, eventBus)
+                session = newSession
+                val strategy: GameModeStrategy = TurnBasedStrategy()
+                modeManager = GameModeManager(
+                    initialStrategy = strategy,
+                    context = StrategyContext(
+                        session = newSession,
+                        contentRegistry = contentRegistry,
+                        aiService = aiService,
+                        eventBus = eventBus,
+                        rng = newSession.rng
+                    )
+                )
                 listOf(GameEvent.StateChanged, GameEvent.SaveRequired)
             }
             is GameAction.ResumeRun -> {
                 profile = action.snapshot.profile
-                session = action.snapshot.activeRun?.let { GameSession.restore(contentRegistry, aiService, it) }
+                val restored = action.snapshot.activeRun?.let {
+                    GameSession.restore(contentRegistry, aiService, it, eventBus)
+                }
+                session = restored
+                if (restored != null) {
+                    val strategy: GameModeStrategy = TurnBasedStrategy()
+                    modeManager = GameModeManager(
+                        initialStrategy = strategy,
+                        context = StrategyContext(
+                            session = restored,
+                            contentRegistry = contentRegistry,
+                            aiService = aiService,
+                            eventBus = eventBus,
+                            rng = restored.rng
+                        )
+                    )
+                }
                 listOf(GameEvent.StateChanged)
             }
             is GameAction.SelectSquare -> session?.selectSquare(action.row, action.col) ?: emptyList()
@@ -36,6 +81,7 @@ class GameRuntime(
             }
             GameAction.AbandonRun -> {
                 session = null
+                modeManager = null
                 listOf(GameEvent.SaveRequired, GameEvent.StateChanged)
             }
         }.mapEventsForProfile()
@@ -62,6 +108,7 @@ class GameRuntime(
                         )
                     )
                     session = null
+                    modeManager = null
                     event
                 }
                 else -> event
