@@ -92,6 +92,7 @@ class GameSession private constructor(
     fun state(): GameState = GameState(
         board = board.snapshot(),
         turnState = turnState,
+        phase = deriveRunPhase(),
         currentRound = currentRound,
         maxRounds = contentRegistry.balance.maxRounds,
         score = score,
@@ -106,6 +107,7 @@ class GameSession private constructor(
     fun snapshot(): ActiveRunSnapshot = ActiveRunSnapshot(
         board = board.snapshot(),
         turnState = turnState,
+        phase = deriveRunPhase(),
         currentRound = currentRound,
         score = score,
         selectedPieceId = selectedPieceId,
@@ -478,5 +480,15 @@ class GameSession private constructor(
         score += contentRegistry.balance.scoreRoundBase * currentRound +
             contentRegistry.balance.scoreCaptureMultiplier * capturedByPlayerThisRound
         capturedByPlayerThisRound = 0
+    }
+
+    private fun deriveRunPhase(): RunPhase {
+        if (offeredUpgradeIds.isNotEmpty()) return RunPhase.UPGRADE_REWARD
+        return when (turnState) {
+            TurnState.PLAYER_TURN -> RunPhase.PLAYER_INPUT
+            TurnState.PLAYER_DOUBLE_MOVE -> RunPhase.PLAYER_DOUBLE_INPUT
+            TurnState.ENEMY_TURN -> RunPhase.ENEMY_RESOLUTION
+            TurnState.ROUND_WON, TurnState.GAME_OVER -> RunPhase.IDLE
+        }
     }
 }
