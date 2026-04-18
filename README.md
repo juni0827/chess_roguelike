@@ -62,6 +62,11 @@ assets/...
 
 유저 모드는 데스크톱에서 `~/.chess-roguelike/mods`, Android에서는 앱 내부 저장소 `files/mods` 아래에 풀립니다.
 
+
+## Design & Handoff Docs
+
+- `docs/dev-5-core-screen-ia-wireframe.md` - DEV-5 핵심 화면 IA, 와이어프레임, 상태 처리, 핸드오프 스냅샷
+
 ## Current Scope
 
 - 공식 초기 언어: `ko-KR`, `en`
