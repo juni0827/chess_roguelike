@@ -70,3 +70,8 @@ assets/...
 - 모딩 범위: 데이터 기반 정의, 텍스트, 아이콘/리소스 override
 - 저장: 로컬 JSON snapshot
 - 규칙 확장: 폰 자동 퀸 승격 포함
+
+## Project Operations
+
+- [CEO-11 콘셉트 비교/방향 제안](docs/ceo-11-concept-comparison-and-direction.md)
+
