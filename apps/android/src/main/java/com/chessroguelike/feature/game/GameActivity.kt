@@ -15,6 +15,7 @@ import com.chessroguelike.feature.upgrade.UpgradeActivity
 import com.chessroguelike.game.GameAction
 import com.chessroguelike.game.GameEvent
 import com.chessroguelike.game.GameState
+import com.chessroguelike.ui.board.BoardView
 
 class GameActivity : AppCompatActivity() {
 
@@ -72,8 +73,18 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun setupBoardView() {
-        binding.boardView.onPieceSelected = { row, col -> handleSquareSelected(row, col) }
-        binding.boardView.onMoveSelected = { row, col -> handleSquareSelected(row, col) }
+        binding.boardView.onSquareTapped = { tapIntent ->
+            when (tapIntent) {
+                is BoardView.TapIntent.SelectPiece -> handleSquareSelected(
+                    tapIntent.square.row,
+                    tapIntent.square.col
+                )
+                is BoardView.TapIntent.ExecuteMove -> handleSquareSelected(
+                    tapIntent.square.row,
+                    tapIntent.square.col
+                )
+            }
+        }
     }
 
     private fun setupButtons() {
@@ -148,7 +159,7 @@ class GameActivity : AppCompatActivity() {
         binding.boardView.board = board
         binding.boardView.selectedPiece = state.selectedPieceId?.let(board::getPieceById)
         binding.boardView.validMoves = state.validMoves
-        binding.boardView.isInteractionEnabled = true
+        binding.boardView.isInteractionEnabled = shouldEnableBoardInput(state)
         binding.boardView.refresh()
 
         binding.tvRoundInfo.text = container.localize(
@@ -194,6 +205,12 @@ class GameActivity : AppCompatActivity() {
         binding.btnEndGame.text = container.localize("ui.game.end_game")
         binding.btnSkipDoubleMove.visibility =
             if (state.turnState == com.chessroguelike.engine.TurnState.PLAYER_DOUBLE_MOVE) View.VISIBLE else View.GONE
+    }
+
+    private fun shouldEnableBoardInput(state: GameState): Boolean {
+        if (pendingAbilityUpgradeId != null) return true
+        return state.turnState == com.chessroguelike.engine.TurnState.PLAYER_TURN ||
+            state.turnState == com.chessroguelike.engine.TurnState.PLAYER_DOUBLE_MOVE
     }
 
     private fun showGameOverDialog(round: Int, score: Int, awardedCurrency: Int) {
