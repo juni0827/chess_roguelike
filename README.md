@@ -62,13 +62,11 @@ assets/...
 
 유저 모드는 데스크톱에서 `~/.chess-roguelike/mods`, Android에서는 앱 내부 저장소 `files/mods` 아래에 풀립니다.
 
+
+
 ## Current Scope
 
 - 공식 초기 언어: `ko-KR`, `en`
 - 모딩 범위: 데이터 기반 정의, 텍스트, 아이콘/리소스 override
 - 저장: 로컬 JSON snapshot
 - 규칙 확장: 폰 자동 퀸 승격 포함
-## Design Docs
-
-- `docs/dev-3-visual-reference-style-direction.md` - DEV-3 비주얼 레퍼런스 및 스타일 방향 기준 문서
-
