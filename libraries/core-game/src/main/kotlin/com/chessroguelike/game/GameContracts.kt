@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
 data class GameState(
     val board: BoardSnapshot,
     val turnState: TurnState,
+    val phase: RunPhase,
     val currentRound: Int,
     val maxRounds: Int,
     val score: Int,
@@ -21,11 +22,21 @@ data class GameState(
     val rngState: Long
 )
 
+@Serializable
+enum class RunPhase {
+    IDLE,
+    PLAYER_INPUT,
+    PLAYER_DOUBLE_INPUT,
+    ENEMY_RESOLUTION,
+    UPGRADE_REWARD
+}
+
 sealed interface GameAction {
     data class StartRun(val seed: Long = System.currentTimeMillis()) : GameAction
     data class ResumeRun(val snapshot: SaveSnapshot) : GameAction
     data class SelectSquare(val row: Int, val col: Int) : GameAction
     data object SkipDoubleMove : GameAction
+    data class Tick(val deltaSeconds: Float) : GameAction
     data class ChooseUpgrade(val upgradeId: String, val targetPieceId: Int? = null) : GameAction
     data class SpendMetaCurrency(val nodeId: String) : GameAction
     data object AbandonRun : GameAction
@@ -50,6 +61,7 @@ sealed interface GameEvent {
 data class ActiveRunSnapshot(
     val board: BoardSnapshot,
     val turnState: TurnState,
+    val phase: RunPhase = RunPhase.PLAYER_INPUT,
     val currentRound: Int,
     val score: Int,
     val selectedPieceId: Int?,

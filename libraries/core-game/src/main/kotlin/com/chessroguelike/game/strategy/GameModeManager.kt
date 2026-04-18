@@ -57,6 +57,9 @@ class GameModeManager(
     fun handleSelectSquare(row: Int, col: Int): List<GameEvent> =
         activeStrategy.handleSelectSquare(context, row, col)
 
+    fun skipDoubleMove(): List<GameEvent> =
+        activeStrategy.skipDoubleMove(context)
+
     fun tick(deltaSeconds: Float): List<GameEvent> =
         activeStrategy.tick(context, deltaSeconds)
 }
