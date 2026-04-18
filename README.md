@@ -63,9 +63,6 @@ assets/...
 유저 모드는 데스크톱에서 `~/.chess-roguelike/mods`, Android에서는 앱 내부 저장소 `files/mods` 아래에 풀립니다.
 
 
-## Design & Handoff Docs
-
-- `docs/dev-5-core-screen-ia-wireframe.md` - DEV-5 핵심 화면 IA, 와이어프레임, 상태 처리, 핸드오프 스냅샷
 
 ## Current Scope
 
@@ -73,3 +70,10 @@ assets/...
 - 모딩 범위: 데이터 기반 정의, 텍스트, 아이콘/리소스 override
 - 저장: 로컬 JSON snapshot
 - 규칙 확장: 폰 자동 퀸 승격 포함
+
+## Project Operations
+
+- DEV-10 구현 지시서: [docs/dev-10-data-structure-implementation-guide.md](docs/dev-10-data-structure-implementation-guide.md)
+- [CEO-12: Make promotion demo completion guide](docs/ceo-12-make-promotion-demo.md)
+- [CEO-8: Roguelike progression research](docs/ceo-8-roguelike-progression-research.md)
+- [CEO-6: Balatro-like visual direction research](docs/ceo-6-balatro-visual-direction-research.md)
