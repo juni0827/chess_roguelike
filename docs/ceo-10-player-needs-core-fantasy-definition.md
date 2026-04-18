@@ -137,7 +137,7 @@ Owner: CEO Team (handoff 대상: DEV / DESIGN)
 
 ---
 
-## Handoff Snapshot (for CEO-13 coordination)
+## Handoff Snapshot (for DEV / DESIGN coordination)
 
 ### 현재 결정 사항
 
