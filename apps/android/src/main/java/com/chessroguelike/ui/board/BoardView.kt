@@ -18,11 +18,17 @@ class BoardView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
+    data class BoardSquare(val row: Int, val col: Int)
+
+    sealed interface TapIntent {
+        data class SelectPiece(val square: BoardSquare) : TapIntent
+        data class ExecuteMove(val square: BoardSquare) : TapIntent
+    }
+
     var board: ChessBoard? = null
     var selectedPiece: ChessPiece? = null
     var validMoves: List<Move> = emptyList()
-    var onPieceSelected: ((row: Int, col: Int) -> Unit)? = null
-    var onMoveSelected: ((row: Int, col: Int) -> Unit)? = null
+    var onSquareTapped: ((TapIntent) -> Unit)? = null
     var isInteractionEnabled = true
 
     private val lightSquarePaint = Paint().apply { color = Color.parseColor("#F0D9B5") }
@@ -183,18 +189,28 @@ class BoardView @JvmOverloads constructor(
         if (!isInteractionEnabled) return false
         if (event.action != MotionEvent.ACTION_UP) return true
 
-        val col = ((event.x - boardOffsetX) / squareSize).toInt()
-        val row = ((event.y - boardOffsetY) / squareSize).toInt()
+        val square = resolveSquare(event.x, event.y) ?: return true
 
-        if (row !in 0 until ChessBoard.SIZE || col !in 0 until ChessBoard.SIZE) return true
-
-        if (validMoves.any { it.toRow == row && it.toCol == col }) {
-            onMoveSelected?.invoke(row, col)
+        val intent = if (validMoves.any { it.toRow == square.row && it.toCol == square.col }) {
+            TapIntent.ExecuteMove(square)
         } else {
-            onPieceSelected?.invoke(row, col)
+            TapIntent.SelectPiece(square)
+        }
+        onSquareTapped?.invoke(intent)
+        return true
+    }
+
+    private fun resolveSquare(x: Float, y: Float): BoardSquare? {
+        if (squareSize <= 0f) return null
+
+        val col = ((x - boardOffsetX) / squareSize).toInt()
+        val row = ((y - boardOffsetY) / squareSize).toInt()
+
+        if (row !in 0 until ChessBoard.SIZE || col !in 0 until ChessBoard.SIZE) {
+            return null
         }
 
-        return true
+        return BoardSquare(row = row, col = col)
     }
 
     fun refresh() {
