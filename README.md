@@ -64,6 +64,7 @@ assets/...
 
 
 
+
 ## Current Scope
 
 - 공식 초기 언어: `ko-KR`, `en`
