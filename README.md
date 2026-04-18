@@ -63,9 +63,7 @@ assets/...
 유저 모드는 데스크톱에서 `~/.chess-roguelike/mods`, Android에서는 앱 내부 저장소 `files/mods` 아래에 풀립니다.
 
 
-## Project Operations
 
-- [DEV-6 전투 HUD와 정보 우선순위 설계](docs/dev-6-combat-hud-information-priority.md)
 
 ## Current Scope
 
@@ -73,3 +71,8 @@ assets/...
 - 모딩 범위: 데이터 기반 정의, 텍스트, 아이콘/리소스 override
 - 저장: 로컬 JSON snapshot
 - 규칙 확장: 폰 자동 퀸 승격 포함
+
+## Project Operations
+
+- [CEO-11 콘셉트 비교/방향 제안](docs/ceo-11-concept-comparison-and-direction.md)
+
