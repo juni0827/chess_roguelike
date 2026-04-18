@@ -71,5 +71,5 @@ assets/...
 
 ## Project Operations
 
-- CEO-11 콘셉트 비교/방향 제안: `docs/ceo-11-concept-comparison-and-direction.md`
+- [CEO-11 콘셉트 비교/방향 제안](docs/ceo-11-concept-comparison-and-direction.md)
 
